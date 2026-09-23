@@ -1,0 +1,15 @@
+body[data-cursor-glass-mode="true"]
+[data-message-kind="human"]
+[data-message-role="human"]
+.composer-human-message {
+  background-color: #EEF3F8 !important;
+  border-left: 3px solid #C5D0DC !important;
+}
+
+body[data-cursor-glass-mode="true"]
+[data-message-kind="human"]
+[data-message-role="human"]
+.composer-human-message-content {
+  padding-top: 11px;
+  padding-bottom: 11px;
+}
