@@ -119,7 +119,7 @@
 ## D. Phase 1 注入加载研究（Phase 1 的第一项任务）
 
 > **最大未知**：如何在每次 Glass Window 启动时可靠加载我们的运行时翻译器。  
-> 本节只列候选，**不选定赢家**。研究结论产出后再定实现路径。
+> 候选调研见下；**Phase 1A 实机后倾向采纳 B**（细节以 `research/phase-1a-injection.md` 为准）。
 
 ### 目标约束
 
@@ -141,7 +141,27 @@
 - 各候选的可行性、风险（含 checksum）、升级成本对照表。
 - 明确推荐路径与否决理由；若均高风险，Escalation 回 §B 第 4 点，而不是默认开启 checksum sync。
 
+### Phase 1A 研究进展（2026-09-23 研究 / 2026-09-24 实机）
+
+详细对照见 **`research/phase-1a-injection.md`**（含本机 inspect；**截至文档更新时仍未改 Cursor 安装**）。
+
+- 重建 + 实机：Agent Window / Glass 入口为 `workbench.glass.main.js`；与 desktop 分流。本机安装根：`D:\下载应用\cursor\resources\app`（3.21.18）。
+- `product.json.checksums` 仅 6 键（desktop js/css、workbench.html/js、preload、extensionHostProcess）；**无** glass 键。
+- **拍板倾向：采纳 B**（glass EOF 最小 loader + sidecar）。**否决 A**；**B′ 后备**；**暂缓 C**。写入安装目录前需用户确认，并做备份 / SHA256。
+
 ---
+
+### Phase 1B 加载入口安全验收（2026-09-24）
+
+详见 **`research/phase-1b-load-entry.md`**。
+
+- 本机 checksum：**glass 不在** 6 键列表中；未改 `product.json`。
+- 备份 SHA 与 Phase 1A 原始记录一致；marker 全文件仅 1 次。
+- **结论：A**（可进入 Phase 1C）——静态审计通过；1B.1 部署层通过；人工 DevTools 三项已确认。非结论 C。
+
+### Phase 1B.1 部署收口（2026-09-24）
+
+见 **`research/phase-1b1-deploy.md`**：`scripts/deploy-glass-loader.js` / `restore-glass-loader.js`；SoT=`runtime/bootstrap.js`；自动 Test A–E 通过。人工 DevTools 三项已于 2026-09-24 用户确认通过（`phase-1b-load-entry.md` §5）。
 
 ## E. Phase 1 成功标准（PoC 门禁 — 先于 Settings 全量本地化）
 

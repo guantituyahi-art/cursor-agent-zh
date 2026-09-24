@@ -1,15 +1,36 @@
 # scripts/
 
-本目录为**未来**运维/注入脚本占位。
+## Phase 1B.1 — Glass loader deploy / restore
 
-## 当前状态
-
-以下脚本均 **尚未实现**：
-
-| 规划脚本 | 用途 |
+| 脚本 | 用途 |
 | --- | --- |
-| 备份 / 还原 | 修改 Cursor 安装目录文件前备份，并支持还原 |
-| 兼容性检查 | 校验 Cursor 版本、Glass 资源、checksum、关键选择器 |
-| CSS 注入 | 将 `styles/user-message.css` 等安全注入 Glass / Agent Window |
+| `deploy-glass-loader.js` | 幂等部署 Glass EOF loader + 从 SoT 复制 sidecar |
+| `restore-glass-loader.js` | 用已验证原始 backup 恢复 glass，并删除 sidecar |
+| `lib/glass-loader-shared.js` | 共享常量与检查（marker、checksum 门禁、备份规则） |
 
-请勿在本阶段向 Cursor 安装目录写入任何文件。修改前必须先完成备份与兼容检查（见 `docs/compatibility.md`）。
+### Source of Truth
+
+- 唯一源码：`runtime/bootstrap.js`
+- 安装目录 `cursor-agent-zh-bootstrap.js`：**仅部署产物**（由 deploy 复制生成）
+
+### 用法
+
+在能访问 Cursor 安装目录的机器上：
+
+```bash
+# 可选：显式指定 resources/app
+export CURSOR_APP="D:/下载应用/cursor/resources/app"
+
+node scripts/deploy-glass-loader.js --repo /path/to/cursor-agent-zh
+node scripts/restore-glass-loader.js --repo /path/to/cursor-agent-zh
+```
+
+`--app` / 环境变量 `CURSOR_APP` 指向 `resources/app`。未指定时尝试解析 PATH 上的 `cursor`。
+
+### 硬约束
+
+- glass 若出现在 `product.json.checksums` → **立即停止**，不改任何文件，不改 checksum。
+- 已存在 `workbench.glass.main.js.cursor-agent-zh-backup` 时：**绝不覆盖**；须无 marker 且 SHA256 等于 Phase 1A 原始记录。
+- 不修改 `workbench.desktop.main.js`、`product.json`。
+
+详见 `research/phase-1b1-deploy.md`。
