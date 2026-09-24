@@ -7,12 +7,14 @@
 | `deploy-glass-loader.js` | 幂等部署 Glass EOF loader + 从 SoT 复制 sidecar |
 | `restore-glass-loader.js` | 用已验证原始 backup 恢复 glass，并删除 sidecar |
 | `lib/glass-loader-shared.js` | 共享常量与检查（marker、checksum 门禁、备份规则） |
+| `test-exact-translation.js` | Phase 1D.1 exact A–M + SoT 注入 |
 | `test-runtime-safety.js` | Phase 1C：`shouldSkipNode` 等纯函数分类测试（无 jsdom） |
 
-### Source of Truth
+### Source of Truth（双源 → 生成 sidecar）
 
-- 唯一源码：`runtime/bootstrap.js`
-- 安装目录 `cursor-agent-zh-bootstrap.js`：**仅部署产物**（由 deploy 复制生成）
+- Runtime 逻辑：`runtime/bootstrap.js`
+- 词典：`translations/zh-CN.json`（分层 schema）
+- 安装目录 `cursor-agent-zh-bootstrap.js`：**生成产物**（注入翻译包 + 拼接 bootstrap；非手写）
 
 ### 用法
 

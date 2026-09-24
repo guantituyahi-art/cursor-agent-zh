@@ -1,24 +1,32 @@
 # runtime/
 
-## Source of Truth
+## Source of Truth（双源）
 
-**`bootstrap.js` 是 runtime 唯一源码。**
+| SoT | 路径 | 职责 |
+| --- | --- | --- |
+| Runtime 逻辑 | **`bootstrap.js`** | Glass 门禁、Invariants、exact 应用 |
+| 词典 | **`translations/zh-CN.json`** | 分层 exact / contextual / dynamic |
 
-安装目录 `cursor-agent-zh-bootstrap.js` 仅由 `scripts/deploy-glass-loader.js` 复制生成。
+安装目录 `cursor-agent-zh-bootstrap.js` 由 `scripts/deploy-glass-loader.js` **生成**（注入 `__cursorAgentZhTranslations` + 拼接 bootstrap）。**不要**手改安装产物；**不要**在 bootstrap 内维护第二份词典。
 
-## Phase 1C（已通过人工验收，2026-09-24）
+## Phase 1D.2a（当前）
 
-安全骨架（**不翻译**）：
+Exact PoC + MutationObserver（**仅**三个完整串；Glass DOM 校准）。初始扫描保留，observer 增量补充：
 
-- Glass 门禁：`body[data-cursor-glass-mode="true"]`（属性缺失时有界等待，避免 timing race）
-- Translation Invariants：`shouldSkipNode`（message / code / editable）
-- 一次只读 TreeWalker 扫描 + 统计日志（不打印正文）
-- `globalThis.__cursorAgentZhRuntime.getStatus()`
-- 与 loader guard `__cursorAgentZhLoader` 分责
+- `New Chat` → `新建聊天`
+- `New Project` → `新建项目`
+- `Automations` → `自动化`
 
-测试：`node scripts/test-runtime-safety.js`、`node scripts/test-loader-placement.js`  
-说明：`research/phase-1c-runtime-safety.md`；blocker：`phase-1c-loader-blocker.md`、`phase-1c-glass-scope-race.md`
+管线：Glass → `shouldSkipNode` → exact full-string → `nodeValue`。无 MutationObserver（见 1D.2）。
+
+测试：
+
+- `node scripts/test-runtime-safety.js`
+- `node scripts/test-exact-translation.js`
+- `node scripts/test-mutation-exact.js`
+
+说明：`research/phase-1d2a-mutation-exact.md`（1D.1 记录见 `phase-1d1-exact-translation.md`）
 
 ## 尚未实现
 
-MutationObserver、词典应用、UI 文案替换、Settings 汉化。
+characterData observer / contextual / dynamic / Settings / deferred 种子（原 New Agent / Show Chat History / Review changes / Keep / Undo / …）。1D.2b 未开始。

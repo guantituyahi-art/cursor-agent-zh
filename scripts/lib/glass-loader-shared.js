@@ -354,13 +354,99 @@ function verifyExistingBackupOrThrow(backupPath) {
   return { action: 'reuse', sha };
 }
 
-function deploySidecar(repoRoot, sidecarPath) {
-  const src = path.join(repoRoot, 'runtime', 'bootstrap.js');
-  if (!fs.existsSync(src)) {
-    throw new Error(`Source of truth missing: ${src}`);
+/** Phase 1D.1/1D.2a PoC exact keys only (deploy refuses others). */
+const PHASE_1D1_EXACT_KEYS = [
+  'New Chat',
+  'New Project',
+  'Automations',
+];
+
+/**
+ * Load + validate translations/zh-CN.json (layered schema).
+ * Repo JSON is the only dictionary Source of Truth.
+ */
+function loadTranslationsPack(repoRoot) {
+  const jsonPath = path.join(repoRoot, 'translations', 'zh-CN.json');
+  if (!fs.existsSync(jsonPath)) {
+    throw new Error(`Translations SoT missing: ${jsonPath}`);
   }
-  fs.copyFileSync(src, sidecarPath);
-  return { src, sidecarPath, sha256: sha256File(sidecarPath) };
+  let raw;
+  try {
+    raw = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+  } catch (e) {
+    throw new Error(`Invalid translations JSON: ${e.message}`);
+  }
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new Error('translations/zh-CN.json must be an object with exact/contextual/dynamic');
+  }
+  if (!raw.exact || typeof raw.exact !== 'object' || Array.isArray(raw.exact)) {
+    throw new Error('translations/zh-CN.json: "exact" must be an object map');
+  }
+  if (!Array.isArray(raw.contextual)) {
+    throw new Error('translations/zh-CN.json: "contextual" must be an array');
+  }
+  if (!Array.isArray(raw.dynamic)) {
+    throw new Error('translations/zh-CN.json: "dynamic" must be an array');
+  }
+  const allowed = new Set(PHASE_1D1_EXACT_KEYS);
+  const exact = {};
+  for (const key of Object.keys(raw.exact)) {
+    if (!allowed.has(key)) {
+      throw new Error(
+        `Phase 1D.2a forbids exact key not in PoC allowlist: ${JSON.stringify(key)}`,
+      );
+    }
+    const val = raw.exact[key];
+    if (typeof val !== 'string' || !val) {
+      throw new Error(`exact[${JSON.stringify(key)}] must be a non-empty string`);
+    }
+    exact[key] = val;
+  }
+  for (const need of PHASE_1D1_EXACT_KEYS) {
+    if (!Object.prototype.hasOwnProperty.call(exact, need)) {
+      throw new Error(`Phase 1D.2a exact map missing required key: ${need}`);
+    }
+  }
+  return {
+    exact,
+    contextual: [],
+    dynamic: [],
+    schema: 'layered-v1',
+    runtimePhase: '1D.2a',
+  };
+}
+
+/**
+ * Build install sidecar: inject read-only translation pack, then runtime bootstrap.
+ * No bundler; no second runtime fetch of JSON.
+ */
+function buildSidecarSource(repoRoot) {
+  const bootstrapPath = path.join(repoRoot, 'runtime', 'bootstrap.js');
+  if (!fs.existsSync(bootstrapPath)) {
+    throw new Error(`Runtime SoT missing: ${bootstrapPath}`);
+  }
+  const pack = loadTranslationsPack(repoRoot);
+  const bootstrap = fs.readFileSync(bootstrapPath, 'utf8');
+  const header =
+    '/* cursor-agent-zh generated sidecar — do not edit */\n' +
+    '/* SoT: translations/zh-CN.json + runtime/bootstrap.js */\n' +
+    'globalThis.__cursorAgentZhTranslations = ' +
+    JSON.stringify(pack) +
+    ';\n\n';
+  return { source: header + bootstrap, pack, bootstrapPath };
+}
+
+function deploySidecar(repoRoot, sidecarPath) {
+  const built = buildSidecarSource(repoRoot);
+  fs.writeFileSync(sidecarPath, built.source, 'utf8');
+  return {
+    src: built.bootstrapPath,
+    translationsSrc: path.join(repoRoot, 'translations', 'zh-CN.json'),
+    sidecarPath,
+    sha256: sha256File(sidecarPath),
+    exactKeyCount: Object.keys(built.pack.exact).length,
+    runtimePhase: built.pack.runtimePhase,
+  };
 }
 
 function parseArgs(argv) {
@@ -445,6 +531,9 @@ module.exports = {
   pathsForApp,
   assertGlassNotChecksummed,
   verifyExistingBackupOrThrow,
+  PHASE_1D1_EXACT_KEYS,
+  loadTranslationsPack,
+  buildSidecarSource,
   deploySidecar,
   parseArgs,
 };

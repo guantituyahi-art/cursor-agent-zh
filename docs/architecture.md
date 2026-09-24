@@ -1,7 +1,7 @@
 # 初步架构（Phase 0）
 
-> 状态：**运行时翻译器尚未实现**（Phase 1C 仅安全骨架）。  
-> Phase 0–1B.1 完成 loader 部署；**Phase 1C** 将 Translation Invariants 落实为 `runtime/bootstrap.js` 中的 `shouldSkipNode` + 只读扫描（见 `research/phase-1c-runtime-safety.md`）。Phase 1D 才开始真正翻译。
+> 状态：**Phase 1D.1 Exact PoC**（仅 3 条静态 exact；无 MutationObserver）。  
+> Phase 0–1C 见既有 research；**1D.1** 见 `research/phase-1d1-exact-translation.md`。词典为分层 `translations/zh-CN.json`；sidecar 由 bootstrap + JSON 生成。
 
 ## 目标
 
@@ -67,7 +67,7 @@
 
 ### 当前状态
 
-`translations/zh-CN.json` 为 **临时扁平种子**（约 8 条 exact-ish 全串），供 Phase 0 占位。  
+`translations/zh-CN.json` 自 Phase 1D.1 起为 **正式分层 schema**（`exact` / `contextual` / `dynamic`）。1D.1 仅启用 3 条 exact；Keep/Undo 等为 deferred。  
 **Phase 1+ 应迁移到分层结构**，避免短词与动态句永久混在同一扁平 map 里。
 
 ### 三层目标结构（推荐：单文件分节）
@@ -77,8 +77,9 @@
 ```json
 {
   "exact": {
-    "New Agent": "新建智能体",
-    "Show Chat History": "显示聊天历史"
+    "New Chat": "新建聊天",
+    "New Project": "新建项目",
+    "Automations": "自动化"
   },
   "contextual": [
     {
@@ -165,19 +166,24 @@
 
 ### Phase 1C Runtime Safety（2026-09-24）
 
-见 **`research/phase-1c-runtime-safety.md`**（及 loader-blocker / glass-scope-race）。`runtime/bootstrap.js`：Glass 门禁（含 pending 有界等待）、Invariants 跳过、只读统计扫描、`getStatus()`；**无**文案修改。自动门禁与人工验收均已于 2026-09-24 通过。**未开始** Phase 1D。
+见 **`research/phase-1c-runtime-safety.md`**（及 loader-blocker / glass-scope-race）。1C 人工验收已于 2026-09-24 通过。
+
+### Phase 1D.1 Exact Static PoC（2026-09-24）
+
+见 **`research/phase-1d1-exact-translation.md`** 与 **`research/phase-1d2a-mutation-exact.md`**。分层词典 + exact（校准三词）；1D.1 一次性扫描；1D.2a 在 Glass 上挂一次 `childList` MutationObserver 做增量，复用同一 safety 管线。侧栏动态挂载导致 1D.1 UI proof 顺延至 1D.2a；**1D.2a 人工验收已于 2026-09-24 通过。**
 
 ## E. Phase 1 成功标准（PoC 门禁 — 先于 Settings 全量本地化）
 
 ### PoC 范围（仅这些文案）
 
-- New Agent  
-- Show Chat History  
-- Review changes  
-- Keep  
-- Undo  
+**Phase 1D.1 当前启用（Glass 3.21.18 校准）：**
 
-（种子词典中的 Keep All / Undo All / New Agents Window 等可作为顺带验证，**不以扩大范围为门禁条件**。）
+- New Chat  
+- New Project  
+- Automations  
+
+**Deferred（未接入 runtime）：** New Agent / Show Chat History / Review changes / Keep / Undo / Keep All / Undo All / New Agents Window 等。  
+（更广 Phase 1 门禁仍以架构 §E 为准；1D.1 不以扩大范围为门禁条件。）
 
 ### 必须全部满足，方可考虑 Settings 等更大范围本地化
 

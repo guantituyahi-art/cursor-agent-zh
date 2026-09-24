@@ -20,7 +20,7 @@
 ### Phase 1（下一步）
 
 1. **注入加载研究**（如何在每次 Glass 启动时可靠加载我们的 JS；候选见架构 §D，先调研不急着定案）
-2. **PoC 文案门禁**：New Agent / Show Chat History / Review changes / Keep / Undo（须过架构 §E 全部条件）
+2. **PoC 文案门禁**：New Chat / New Project / Automations（1D.1 校准；其它种子 deferred）（须过架构 §E 全部条件）
 3. 仅在 PoC 通过后，才考虑更大范围（如 Settings）本地化
 
 硬安全边界（消息正文 / 代码 / 终端 / 路径 / 协议字段等永不翻译）与 Phase 1 门禁详见 [`docs/architecture.md`](docs/architecture.md)。

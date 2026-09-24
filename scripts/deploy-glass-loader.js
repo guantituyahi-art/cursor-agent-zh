@@ -3,8 +3,9 @@
 
 /**
  * Phase 1B.1 — idempotent Glass loader deploy.
- * Source of truth: runtime/bootstrap.js → install sidecar only.
- * Does not translate UI. Does not touch desktop / product.json checksums.
+ * Dual SoT → generated install sidecar:
+ *   runtime/bootstrap.js + translations/zh-CN.json
+ * Does not touch desktop / product.json checksums. Phase 1D.1 exact only.
  *
  * Flags:
  *   --reinstall-loader  Restore glass from pristine backup + write one safe loader
@@ -71,9 +72,11 @@ function main() {
     ? shared.sha256File(p.desktop)
     : null;
 
-  // Always refresh sidecar from SoT (deploy product).
+  // Always refresh sidecar from dual SoT (bootstrap + translations JSON).
   const side = shared.deploySidecar(repoRoot, p.sidecar);
-  console.log(`[deploy] sidecar refreshed from ${side.src}`);
+  console.log(`[deploy] sidecar built from runtime=${side.src}`);
+  console.log(`[deploy] translations=${side.translationsSrc}`);
+  console.log(`[deploy] runtimePhase=${side.runtimePhase} exactKeys=${side.exactKeyCount}`);
   console.log(`[deploy] sidecar sha256=${side.sha256}`);
 
   const hasMarker = shared.fileContainsMarker(p.glass);

@@ -1,11 +1,16 @@
 /**
- * cursor-agent-zh — Phase 1C Runtime Safety Skeleton
+ * cursor-agent-zh — Phase 1D.2a MutationObserver Dynamic Exact PoC
  *
- * SOURCE OF TRUTH for runtime. Deploy copies this file to:
- *   out/vs/workbench/cursor-agent-zh-bootstrap.js
+ * SOURCE OF TRUTH for runtime logic. Deploy builds install sidecar from:
+ *   translations/zh-CN.json  (dictionary SoT)
+ *   runtime/bootstrap.js     (this file — logic SoT)
+ * → out/vs/workbench/cursor-agent-zh-bootstrap.js
  *
- * Phase 1C: Glass gate + Translation Invariants + read-only safety scan.
- * Does NOT translate UI. Does NOT mutate text nodes. DOM live observer deferred to Phase 1D.
+ * Phase 1D.2a: keep 1C/1D.1 one-shot scan, then attach one Glass-only MutationObserver
+ * (childList+subtree). Dynamic nodes reuse the same safety → exact → nodeValue pipeline.
+ * No substring / fuzzy / attributes. No characterData observer (sidebar adds via childList).
+ * Dictionary is NEVER hard-coded here; read globalThis.__cursorAgentZhTranslations
+ * injected by deploy (or tests).
  */
 (function cursorAgentZhBootstrap(root) {
   'use strict';
@@ -151,7 +156,7 @@
   }
 
   /**
-   * Text node eligible as a future translation candidate (Phase 1C: classify only).
+   * Text node eligible as a translation candidate (must pass invariants).
    */
   function isCandidateTextNode(node) {
     if (!isTextNode(node)) return false;
@@ -162,12 +167,316 @@
     return !shouldSkipNode(node);
   }
 
+  var TRANSLATIONS_GLOBAL = '__cursorAgentZhTranslations';
+  var RUNTIME_PHASE = '1D.2a';
+
   /**
-   * Read-only TreeWalker scan. Never mutates DOM text.
+   * Dictionary pack from deploy injection (or test harness). Never hard-coded.
+   */
+  function getTranslationsPack() {
+    try {
+      var pack = root[TRANSLATIONS_GLOBAL];
+      if (!pack || typeof pack !== 'object') {
+        return { exact: {} };
+      }
+      var exact = pack.exact;
+      if (!exact || typeof exact !== 'object' || Array.isArray(exact)) {
+        return { exact: {} };
+      }
+      return pack;
+    } catch (_) {
+      return { exact: {} };
+    }
+  }
+
+  function getExactMap() {
+    return getTranslationsPack().exact || {};
+  }
+
+  /**
+   * Split outer whitespace; core must equal an exact key (full-string only).
+   * @returns {{ key: string, next: string }|null}
+   */
+  function matchExactTranslation(raw) {
+    if (raw == null) return null;
+    var s = String(raw);
+    var leadMatch = s.match(/^\s*/);
+    var trailMatch = s.match(/\s*$/);
+    var lead = leadMatch ? leadMatch[0] : '';
+    var trail = trailMatch ? trailMatch[0] : '';
+    if (lead.length + trail.length > s.length) {
+      return null;
+    }
+    var core = s.slice(lead.length, s.length - trail.length);
+    if (!core) return null;
+    var map = getExactMap();
+    if (!Object.prototype.hasOwnProperty.call(map, core)) return null;
+    var zh = map[core];
+    if (typeof zh !== 'string') return null;
+    return { key: core, next: lead + zh + trail };
+  }
+
+  /**
+   * Apply exact translation to a text node if candidate + exact hit.
+   * Safety (shouldSkipNode) always wins.
+   * @returns {{ key: string, applied: boolean, already?: boolean }|null}
+   */
+  function tryApplyExactTranslation(node) {
+    if (!isTextNode(node)) return null;
+    if (shouldSkipNode(node)) return null;
+    var raw = node.nodeValue;
+    if (raw == null) return null;
+    if (!String(raw).replace(/\s+/g, '').length) return null;
+    var hit = matchExactTranslation(raw);
+    if (!hit) return null;
+    if (raw === hit.next) {
+      return { key: hit.key, applied: false, already: true };
+    }
+    try {
+      node.nodeValue = hit.next;
+    } catch (_) {
+      return null;
+    }
+    return { key: hit.key, applied: true };
+  }
+
+  function emptyTranslationCounts() {
+    var counts = {};
+    var map = getExactMap();
+    for (var k in map) {
+      if (Object.prototype.hasOwnProperty.call(map, k)) counts[k] = 0;
+    }
+    return counts;
+  }
+
+  /** Glass translation observer options — childList only (no attributes / characterData). */
+  var TRANSLATION_OBSERVER_OPTIONS = { childList: true, subtree: true };
+
+  function bumpTranslationCount(state, key) {
+    if (!state.translationCounts) state.translationCounts = emptyTranslationCounts();
+    if (Object.prototype.hasOwnProperty.call(state.translationCounts, key)) {
+      state.translationCounts[key] += 1;
+    } else {
+      state.translationCounts[key] = 1;
+    }
+  }
+
+  function mergeScanStatsIntoState(state, stats, asDynamic) {
+    if (!stats) return;
+    state.textNodesSeen = (state.textNodesSeen | 0) + (stats.textNodesSeen | 0);
+    state.candidateCount = (state.candidateCount | 0) + (stats.candidateCount | 0);
+    if (!state.skipCounts) {
+      state.skipCounts = { message: 0, code: 0, editable: 0, empty: 0 };
+    }
+    state.skipCounts.message =
+      (state.skipCounts.message | 0) + (stats.skippedMessage | 0);
+    state.skipCounts.code =
+      (state.skipCounts.code | 0) + (stats.skippedCode | 0);
+    state.skipCounts.editable =
+      (state.skipCounts.editable | 0) + (stats.skippedEditable | 0);
+    state.skipCounts.empty =
+      (state.skipCounts.empty | 0) + (stats.skippedEmpty | 0);
+    state.exactMatches = (state.exactMatches | 0) + (stats.exactMatches | 0);
+    state.translationsApplied =
+      (state.translationsApplied | 0) + (stats.translationsApplied | 0);
+    if (asDynamic) {
+      state.dynamicExactMatches =
+        (state.dynamicExactMatches | 0) + (stats.exactMatches | 0);
+      state.dynamicTranslationsApplied =
+        (state.dynamicTranslationsApplied | 0) + (stats.translationsApplied | 0);
+    }
+    var src = stats.translationCounts || {};
+    for (var k in src) {
+      if (!Object.prototype.hasOwnProperty.call(src, k)) continue;
+      if (!state.translationCounts) state.translationCounts = emptyTranslationCounts();
+      if (Object.prototype.hasOwnProperty.call(state.translationCounts, k)) {
+        state.translationCounts[k] += src[k] | 0;
+      } else {
+        state.translationCounts[k] = src[k] | 0;
+      }
+    }
+  }
+
+  /**
+   * Record one exact try result onto cumulative (+ optional dynamic) counters.
+   * already-translated nodes do not bump translationsApplied (loop-safe).
+   */
+  function recordExactResult(state, result, asDynamic) {
+    if (!result || !result.key) return;
+    state.exactMatches = (state.exactMatches | 0) + 1;
+    bumpTranslationCount(state, result.key);
+    if (asDynamic) {
+      state.dynamicExactMatches = (state.dynamicExactMatches | 0) + 1;
+    }
+    if (result.applied) {
+      state.translationsApplied = (state.translationsApplied | 0) + 1;
+      if (asDynamic) {
+        state.dynamicTranslationsApplied =
+          (state.dynamicTranslationsApplied | 0) + 1;
+      }
+    }
+  }
+
+  /**
+   * Incremental: one added Text / Element / DocumentFragment.
+   * Always reuses shouldSkipNode + tryApplyExactTranslation / runSafetyScan.
+   * Never rescans document.body.
+   */
+  function processAddedNode(node, state, doc) {
+    if (!node || !state) return;
+    state.mutatedNodesSeen = (state.mutatedNodesSeen | 0) + 1;
+
+    if (isTextNode(node)) {
+      var raw = node.nodeValue;
+      var empty = raw == null || !String(raw).replace(/\s+/g, '').length;
+      if (empty) {
+        state.skipCounts.empty = (state.skipCounts.empty | 0) + 1;
+        return;
+      }
+      var reason = skipReasonForNode(node);
+      if (reason === 'message') {
+        state.skipCounts.message = (state.skipCounts.message | 0) + 1;
+        return;
+      }
+      if (reason === 'code') {
+        state.skipCounts.code = (state.skipCounts.code | 0) + 1;
+        return;
+      }
+      if (reason === 'editable') {
+        state.skipCounts.editable = (state.skipCounts.editable | 0) + 1;
+        return;
+      }
+      state.candidateCount = (state.candidateCount | 0) + 1;
+      recordExactResult(state, tryApplyExactTranslation(node), true);
+      return;
+    }
+
+    // Element (1) or DocumentFragment (11): scan only this subtree.
+    var nt = node.nodeType;
+    if (nt === 1 || nt === 11) {
+      var stats = runSafetyScan(node, doc, { applyExact: true });
+      mergeScanStatsIntoState(state, stats, true);
+    }
+  }
+
+  function processAddedNodes(nodes, state, doc) {
+    if (!nodes || !nodes.length) return;
+    for (var i = 0; i < nodes.length; i++) {
+      processAddedNode(nodes[i], state, doc);
+    }
+  }
+
+  /**
+   * Lightweight microtask batching + per-node dedupe.
+   */
+  function createMutationBatcher(state, doc, hooks) {
+    hooks = hooks || {};
+    var pending = [];
+    var pendingSet = typeof Set !== 'undefined' ? new Set() : null;
+    var scheduled = false;
+    var schedule =
+      hooks.schedule ||
+      function (fn) {
+        if (typeof queueMicrotask === 'function') {
+          queueMicrotask(fn);
+        } else if (typeof Promise !== 'undefined') {
+          Promise.resolve().then(fn);
+        } else {
+          setTimeout(fn, 0);
+        }
+      };
+
+    function flush() {
+      scheduled = false;
+      if (!pending.length) return;
+      var nodes = pending;
+      pending = [];
+      if (pendingSet) pendingSet.clear();
+      state.mutationBatches = (state.mutationBatches | 0) + 1;
+      processAddedNodes(nodes, state, doc);
+    }
+
+    function enqueue(node) {
+      if (!node) return;
+      if (pendingSet) {
+        if (pendingSet.has(node)) return;
+        pendingSet.add(node);
+      }
+      pending.push(node);
+      if (!scheduled) {
+        scheduled = true;
+        schedule(flush);
+      }
+    }
+
+    return {
+      enqueue: enqueue,
+      flushSync: flush,
+      pendingCount: function () {
+        return pending.length;
+      },
+    };
+  }
+
+  /**
+   * Attach at most one translation MutationObserver on confirmed Glass docs.
+   * Observes body (narrowest stable root available) with childList+subtree only.
+   */
+  function attachTranslationObserver(state, doc, hooks) {
+    hooks = hooks || {};
+    if (!state || state.observerAttached) {
+      return state && state.translationObserver ? state.translationObserver : null;
+    }
+    if (!state.isGlass) return null;
+    var MO = hooks.MutationObserver;
+    if (MO == null && typeof MutationObserver !== 'undefined') {
+      MO = MutationObserver;
+    }
+    if (typeof MO !== 'function') {
+      state.observerAttached = false;
+      return null;
+    }
+    if (!doc) return null;
+    var observeRoot = doc.body || doc.documentElement;
+    if (!observeRoot) return null;
+
+    var batcher = createMutationBatcher(state, doc, hooks);
+    state.mutationBatcher = batcher;
+
+    var obs = new MO(function (records) {
+      if (!records || !records.length) return;
+      for (var i = 0; i < records.length; i++) {
+        var rec = records[i];
+        var added = rec && rec.addedNodes;
+        if (!added || !added.length) continue;
+        for (var j = 0; j < added.length; j++) {
+          batcher.enqueue(added[j]);
+        }
+      }
+    });
+
+    try {
+      obs.observe(observeRoot, TRANSLATION_OBSERVER_OPTIONS);
+    } catch (_) {
+      state.observerAttached = false;
+      state.translationObserver = null;
+      return null;
+    }
+
+    state.translationObserver = obs;
+    state.observerAttached = true;
+    return obs;
+  }
+
+  /**
+   * TreeWalker scan: classify + Phase 1D.1 exact apply on safe candidates.
    * @param {ParentNode} rootEl
    * @param {Document} doc
+   * @param {{ applyExact?: boolean }} [opts]
    */
-  function runSafetyScan(rootEl, doc) {
+  function runSafetyScan(rootEl, doc, opts) {
+    opts = opts || {};
+    var applyExact = opts.applyExact !== false;
     var stats = {
       textNodesSeen: 0,
       candidateCount: 0,
@@ -175,6 +484,9 @@
       skippedCode: 0,
       skippedEditable: 0,
       skippedEmpty: 0,
+      exactMatches: 0,
+      translationsApplied: 0,
+      translationCounts: emptyTranslationCounts(),
     };
 
     if (!rootEl || !doc || typeof doc.createTreeWalker !== 'function') {
@@ -182,7 +494,6 @@
     }
 
     var SHOW_TEXT = (typeof Node !== 'undefined' && Node.TEXT_NODE) ? 4 : 4;
-    // NodeFilter.SHOW_TEXT === 4
     var walker;
     try {
       walker = doc.createTreeWalker(rootEl, SHOW_TEXT, null);
@@ -203,7 +514,26 @@
         if (reason === 'message') stats.skippedMessage += 1;
         else if (reason === 'code') stats.skippedCode += 1;
         else if (reason === 'editable') stats.skippedEditable += 1;
-        else stats.candidateCount += 1;
+        else {
+          stats.candidateCount += 1;
+          if (applyExact) {
+            var result = tryApplyExactTranslation(node);
+            if (result && result.key) {
+              stats.exactMatches += 1;
+              if (result.applied) stats.translationsApplied += 1;
+              if (
+                Object.prototype.hasOwnProperty.call(
+                  stats.translationCounts,
+                  result.key,
+                )
+              ) {
+                stats.translationCounts[result.key] += 1;
+              } else {
+                stats.translationCounts[result.key] = 1;
+              }
+            }
+          }
+        }
       }
       node = walker.nextNode();
     }
@@ -226,8 +556,19 @@
         editable: 0,
         empty: 0,
       },
-      phase: '1c-safety-skeleton',
-      translates: false,
+      exactMatches: 0,
+      translationsApplied: 0,
+      translationCounts: emptyTranslationCounts(),
+      observerAttached: false,
+      mutationBatches: 0,
+      mutatedNodesSeen: 0,
+      dynamicExactMatches: 0,
+      dynamicTranslationsApplied: 0,
+      translationObserver: null,
+      mutationBatcher: null,
+      phase: '1d.2a-mutation-exact',
+      runtimePhase: RUNTIME_PHASE,
+      translates: true,
     };
   }
 
@@ -239,6 +580,13 @@
   function buildApi(state) {
     return {
       getStatus: function getStatus() {
+        var counts = {};
+        var src = state.translationCounts || {};
+        for (var k in src) {
+          if (Object.prototype.hasOwnProperty.call(src, k)) {
+            counts[k] = src[k] | 0;
+          }
+        }
         return {
           initialized: !!state.initialized,
           isGlass: !!state.isGlass,
@@ -249,18 +597,35 @@
           textNodesSeen: state.textNodesSeen | 0,
           candidateCount: state.candidateCount | 0,
           skipCounts: {
-            message: state.skipCounts.message | 0,
-            code: state.skipCounts.code | 0,
-            editable: state.skipCounts.editable | 0,
-            empty: state.skipCounts.empty | 0,
+            message: (state.skipCounts && state.skipCounts.message) | 0,
+            code: (state.skipCounts && state.skipCounts.code) | 0,
+            editable: (state.skipCounts && state.skipCounts.editable) | 0,
+            empty: (state.skipCounts && state.skipCounts.empty) | 0,
           },
+          exactMatches: state.exactMatches | 0,
+          translationsApplied: state.translationsApplied | 0,
+          translationCounts: counts,
+          observerAttached: !!state.observerAttached,
+          mutationBatches: state.mutationBatches | 0,
+          mutatedNodesSeen: state.mutatedNodesSeen | 0,
+          dynamicExactMatches: state.dynamicExactMatches | 0,
+          dynamicTranslationsApplied: state.dynamicTranslationsApplied | 0,
           phase: state.phase,
-          translates: false,
+          runtimePhase: state.runtimePhase || RUNTIME_PHASE,
+          translates: true,
         };
       },
       shouldSkipNode: shouldSkipNode,
       isGlassDocument: isGlassDocument,
       isCandidateTextNode: isCandidateTextNode,
+      matchExactTranslation: matchExactTranslation,
+      tryApplyExactTranslation: tryApplyExactTranslation,
+      processAddedNodes: function (nodes) {
+        processAddedNodes(nodes, state, typeof document !== 'undefined' ? document : null);
+      },
+      attachTranslationObserver: function (doc, hooks) {
+        return attachTranslationObserver(state, doc, hooks || {});
+      },
     };
   }
 
@@ -269,12 +634,17 @@
       console.log(
         LOG_PREFIX + ' safety audit',
         '\nGlass: ' + state.isGlass,
+        '\nruntimePhase: ' + (state.runtimePhase || RUNTIME_PHASE),
         '\ntextNodesSeen: ' + state.textNodesSeen,
         '\ncandidates: ' + state.candidateCount,
         '\nskippedMessage: ' + state.skipCounts.message,
         '\nskippedCode: ' + state.skipCounts.code,
         '\nskippedEditable: ' + state.skipCounts.editable,
         '\nskippedEmpty: ' + state.skipCounts.empty,
+        '\nexactMatches: ' + (state.exactMatches | 0),
+        '\ntranslationsApplied: ' + (state.translationsApplied | 0),
+        '\nobserverAttached: ' + !!state.observerAttached,
+        '\ndynamicExactMatches: ' + (state.dynamicExactMatches | 0),
       );
     } catch (_) {}
   }
@@ -302,16 +672,25 @@
     state.isGlass = true;
     state.waitingForGlass = false;
     state.skippedNotGlass = false;
-    var stats = runSafetyScan(doc.body || doc.documentElement, doc);
+    state.runtimePhase = RUNTIME_PHASE;
+    state.phase = '1d.2a-mutation-exact';
+    var stats = runSafetyScan(doc.body || doc.documentElement, doc, {
+      applyExact: true,
+    });
     state.textNodesSeen = stats.textNodesSeen;
     state.candidateCount = stats.candidateCount;
     state.skipCounts.message = stats.skippedMessage;
     state.skipCounts.code = stats.skippedCode;
     state.skipCounts.editable = stats.skippedEditable;
     state.skipCounts.empty = stats.skippedEmpty;
+    state.exactMatches = stats.exactMatches;
+    state.translationsApplied = stats.translationsApplied;
+    state.translationCounts = stats.translationCounts;
     state.scanCompleted = true;
     state.scopeSettled = true;
     state.initialized = true;
+    // Phase 1D.2a: supplement (not replace) the one-shot scan.
+    attachTranslationObserver(state, doc);
     logSafetyAudit(state);
   }
 
@@ -449,7 +828,8 @@
     }
 
     var state = emptyStatus();
-    state.phase = '1c-safety-skeleton';
+    state.phase = '1d.2a-mutation-exact';
+    state.runtimePhase = RUNTIME_PHASE;
     var api = buildApi(state);
     api.__booted = true;
     api.__state = state;
@@ -535,6 +915,8 @@
     CODE_CLASS_SUBSTRINGS: CODE_CLASS_SUBSTRINGS.slice(),
     GLASS_WAIT_MS: GLASS_WAIT_MS,
     GLASS_ATTR: GLASS_ATTR,
+    TRANSLATIONS_GLOBAL: TRANSLATIONS_GLOBAL,
+    RUNTIME_PHASE: RUNTIME_PHASE,
     isGlassDocument: isGlassDocument,
     classifyGlassScope: classifyGlassScope,
     isMessageContainer: isMessageContainer,
@@ -543,7 +925,16 @@
     skipReasonForNode: skipReasonForNode,
     shouldSkipNode: shouldSkipNode,
     isCandidateTextNode: isCandidateTextNode,
+    getTranslationsPack: getTranslationsPack,
+    getExactMap: getExactMap,
+    matchExactTranslation: matchExactTranslation,
+    tryApplyExactTranslation: tryApplyExactTranslation,
     runSafetyScan: runSafetyScan,
+    processAddedNode: processAddedNode,
+    processAddedNodes: processAddedNodes,
+    createMutationBatcher: createMutationBatcher,
+    attachTranslationObserver: attachTranslationObserver,
+    TRANSLATION_OBSERVER_OPTIONS: TRANSLATION_OBSERVER_OPTIONS,
     runInit: runInit,
     startGlassScopeWait: startGlassScopeWait,
     RUNTIME_GUARD: RUNTIME_GUARD,
