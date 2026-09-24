@@ -16,10 +16,12 @@ const POC_PACK = {
     'New Project': '新建项目',
     Automations: '自动化',
   },
-  contextual: [],
+  contextual: [
+    { en: 'Search', zh: '搜索', when: 'sidebar-menu-button' },
+  ],
   dynamic: [],
   schema: 'layered-v1',
-  runtimePhase: '1D.2a',
+  runtimePhase: '1D.2b.1',
 };
 
 globalThis.__cursorAgentZhTranslations = POC_PACK;
@@ -190,10 +192,20 @@ test('M second apply is stable', () => {
   assert.strictEqual(t.nodeValue, '自动化');
 });
 
+// Search must NEVER be exact
+test('Search is not an exact key', () => {
+  assert.strictEqual(safety.matchExactTranslation('Search'), null);
+  const span = el('span', {});
+  const t = text('Search', span);
+  t.parentNode = span;
+  assert.strictEqual(safety.tryApplyExactTranslation(t), null);
+  assert.strictEqual(t.nodeValue, 'Search');
+});
+
 // Dictionary SoT / deploy schema
 test('deploy loadTranslationsPack layered schema', () => {
   const pack = shared.loadTranslationsPack(path.join(__dirname, '..'));
-  assert.strictEqual(pack.runtimePhase, '1D.2a');
+  assert.strictEqual(pack.runtimePhase, '1D.2b.1');
   assert.strictEqual(Object.keys(pack.exact).length, 3);
   assert.deepStrictEqual(Object.keys(pack.exact).sort(), [
     'Automations',
@@ -201,6 +213,11 @@ test('deploy loadTranslationsPack layered schema', () => {
     'New Project',
   ]);
   assert.ok(Array.isArray(pack.contextual));
+  assert.strictEqual(pack.contextual.length, 1);
+  assert.strictEqual(pack.contextual[0].en, 'Search');
+  assert.strictEqual(pack.contextual[0].zh, '搜索');
+  assert.strictEqual(pack.contextual[0].when, 'sidebar-menu-button');
+  assert.ok(!Object.prototype.hasOwnProperty.call(pack.exact, 'Search'));
   assert.ok(Array.isArray(pack.dynamic));
 });
 
@@ -211,7 +228,10 @@ test('buildSidecarSource injects pack before bootstrap', () => {
   assert.ok(built.source.includes('"New Chat":"新建聊天"'));
   assert.ok(built.source.includes('"New Project":"新建项目"'));
   assert.ok(built.source.includes('"Automations":"自动化"'));
-  assert.ok(built.source.includes('Phase 1D.2a MutationObserver Dynamic Exact PoC'));
+  assert.ok(built.source.includes('Phase 1D.2b.1 Sidebar Search Contextual Translation'));
+  assert.ok(built.source.includes('"en":"Search"'));
+  assert.ok(built.source.includes('"zh":"搜索"'));
+  assert.ok(built.source.includes('sidebar-menu-button'));
   // must not hardcode a second handwritten dictionary inside bootstrap SoT
   const bootstrapOnly = require('fs').readFileSync(
     path.join(__dirname, '..', 'runtime', 'bootstrap.js'),
@@ -223,7 +243,7 @@ test('buildSidecarSource injects pack before bootstrap', () => {
 });
 
 test('runtimePhase constant', () => {
-  assert.strictEqual(safety.RUNTIME_PHASE, '1D.2a');
+  assert.strictEqual(safety.RUNTIME_PHASE, '1D.2b.1');
 });
 
 console.log('OK ' + passed + ' exact-translation tests');

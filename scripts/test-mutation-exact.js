@@ -15,10 +15,12 @@ const POC_PACK = {
     'New Project': '新建项目',
     Automations: '自动化',
   },
-  contextual: [],
+  contextual: [
+    { en: 'Search', zh: '搜索', when: 'sidebar-menu-button' },
+  ],
   dynamic: [],
   schema: 'layered-v1',
-  runtimePhase: '1D.2a',
+  runtimePhase: '1D.2b.1',
 };
 
 globalThis.__cursorAgentZhTranslations = POC_PACK;
@@ -296,7 +298,7 @@ test('no setInterval / no attr observer / no full-body rescan helper', () => {
   assert.ok(!/TRANSLATION_OBSERVER_OPTIONS = \{[^}]*attributes\s*:/.test(src));
   // processAddedNode must not call runSafetyScan(doc.body
   assert.ok(!/processAddedNode[\s\S]{0,400}runSafetyScan\(\s*doc\.body/.test(src));
-  assert.strictEqual(safety.RUNTIME_PHASE, '1D.2a');
+  assert.strictEqual(safety.RUNTIME_PHASE, '1D.2b.1');
 });
 
 console.log('OK ' + passed + ' mutation-exact tests');

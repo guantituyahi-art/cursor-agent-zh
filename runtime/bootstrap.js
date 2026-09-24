@@ -1,14 +1,15 @@
 /**
- * cursor-agent-zh — Phase 1D.2a MutationObserver Dynamic Exact PoC
+ * cursor-agent-zh — Phase 1D.2b.1 Sidebar Search Contextual Translation
  *
  * SOURCE OF TRUTH for runtime logic. Deploy builds install sidecar from:
  *   translations/zh-CN.json  (dictionary SoT)
  *   runtime/bootstrap.js     (this file — logic SoT)
  * → out/vs/workbench/cursor-agent-zh-bootstrap.js
  *
- * Phase 1D.2a: keep 1C/1D.1 one-shot scan, then attach one Glass-only MutationObserver
- * (childList+subtree). Dynamic nodes reuse the same safety → exact → nodeValue pipeline.
- * No substring / fuzzy / attributes. No characterData observer (sidebar adds via childList).
+ * Phase 1D.2b.1: keep 1C/1D.1/1D.2a scan + one Glass-only MutationObserver
+ * (childList+subtree). Pipeline: safety → exact → contextual → nodeValue.
+ * Contextual "Search" → "搜索" only when ancestor has data-sidebar-menu-button.
+ * No Keep/Undo/Review/other contextual words. No attributes. No characterData.
  * Dictionary is NEVER hard-coded here; read globalThis.__cursorAgentZhTranslations
  * injected by deploy (or tests).
  */
@@ -168,7 +169,7 @@
   }
 
   var TRANSLATIONS_GLOBAL = '__cursorAgentZhTranslations';
-  var RUNTIME_PHASE = '1D.2a';
+  var RUNTIME_PHASE = '1D.2b.1';
 
   /**
    * Dictionary pack from deploy injection (or test harness). Never hard-coded.
@@ -240,11 +241,122 @@
     return { key: hit.key, applied: true };
   }
 
+  /**
+   * Contextual rules from pack.contextual (safe empty if missing).
+   * @returns {Array<{en:string,zh:string,when:string}>}
+   */
+  function getContextualRules() {
+    try {
+      var pack = getTranslationsPack();
+      var list = pack && pack.contextual;
+      if (!list || !Array.isArray(list)) return [];
+      return list;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /**
+   * Walk ancestors; for text nodes start at parent.
+   * True if any ancestor has attrName present (getAttribute != null).
+   */
+  function hasAncestorDataAttr(node, attrName) {
+    if (!node || !attrName) return false;
+    var cur = isTextNode(node) ? node.parentNode : node;
+    var guard = 0;
+    while (cur && guard < 64) {
+      guard += 1;
+      if (isElementNode(cur)) {
+        var v = getAttr(cur, attrName);
+        if (v != null) return true;
+      }
+      cur = cur.parentNode;
+    }
+    return false;
+  }
+
+  /**
+   * Resolve semantic when-id to DOM predicate. Unknown → fail closed.
+   */
+  function matchesContextualWhen(when, node) {
+    if (!when || !node) return false;
+    if (when === 'sidebar-menu-button') {
+      return hasAncestorDataAttr(node, 'data-sidebar-menu-button');
+    }
+    return false;
+  }
+
+  /**
+   * Same whitespace split as exact; core must equal rule.en AND when matches.
+   * @returns {{ key: string, next: string, when: string }|null}
+   */
+  function matchContextualTranslation(raw, node) {
+    if (raw == null || !node) return null;
+    var s = String(raw);
+    var leadMatch = s.match(/^\s*/);
+    var trailMatch = s.match(/\s*$/);
+    var lead = leadMatch ? leadMatch[0] : '';
+    var trail = trailMatch ? trailMatch[0] : '';
+    if (lead.length + trail.length > s.length) {
+      return null;
+    }
+    var core = s.slice(lead.length, s.length - trail.length);
+    if (!core) return null;
+    var rules = getContextualRules();
+    for (var i = 0; i < rules.length; i++) {
+      var rule = rules[i];
+      if (!rule || typeof rule.en !== 'string' || typeof rule.zh !== 'string') {
+        continue;
+      }
+      if (typeof rule.when !== 'string') continue;
+      if (core !== rule.en) continue;
+      if (!matchesContextualWhen(rule.when, node)) continue;
+      return { key: rule.en, next: lead + rule.zh + trail, when: rule.when };
+    }
+    return null;
+  }
+
+  /**
+   * Apply contextual translation if safety allows + when matches.
+   * NEVER translate Search (or any contextual en) without when match.
+   * @returns {{ key: string, applied: boolean, already?: boolean, when?: string }|null}
+   */
+  function tryApplyContextualTranslation(node) {
+    if (!isTextNode(node)) return null;
+    if (shouldSkipNode(node)) return null;
+    var raw = node.nodeValue;
+    if (raw == null) return null;
+    if (!String(raw).replace(/\s+/g, '').length) return null;
+    var hit = matchContextualTranslation(raw, node);
+    if (!hit) return null;
+    if (raw === hit.next) {
+      return { key: hit.key, applied: false, already: true, when: hit.when };
+    }
+    try {
+      node.nodeValue = hit.next;
+    } catch (_) {
+      return null;
+    }
+    return { key: hit.key, applied: true, when: hit.when };
+  }
+
   function emptyTranslationCounts() {
     var counts = {};
     var map = getExactMap();
     for (var k in map) {
       if (Object.prototype.hasOwnProperty.call(map, k)) counts[k] = 0;
+    }
+    return counts;
+  }
+
+  function emptyContextualTranslationCounts() {
+    var counts = {};
+    var rules = getContextualRules();
+    for (var i = 0; i < rules.length; i++) {
+      var rule = rules[i];
+      if (rule && typeof rule.en === 'string' && rule.en) {
+        counts[rule.en] = 0;
+      }
     }
     return counts;
   }
@@ -258,6 +370,17 @@
       state.translationCounts[key] += 1;
     } else {
       state.translationCounts[key] = 1;
+    }
+  }
+
+  function bumpContextualTranslationCount(state, key) {
+    if (!state.contextualTranslationCounts) {
+      state.contextualTranslationCounts = emptyContextualTranslationCounts();
+    }
+    if (Object.prototype.hasOwnProperty.call(state.contextualTranslationCounts, key)) {
+      state.contextualTranslationCounts[key] += 1;
+    } else {
+      state.contextualTranslationCounts[key] = 1;
     }
   }
 
@@ -279,11 +402,21 @@
     state.exactMatches = (state.exactMatches | 0) + (stats.exactMatches | 0);
     state.translationsApplied =
       (state.translationsApplied | 0) + (stats.translationsApplied | 0);
+    state.contextualMatches =
+      (state.contextualMatches | 0) + (stats.contextualMatches | 0);
+    state.contextualTranslationsApplied =
+      (state.contextualTranslationsApplied | 0) +
+      (stats.contextualTranslationsApplied | 0);
     if (asDynamic) {
       state.dynamicExactMatches =
         (state.dynamicExactMatches | 0) + (stats.exactMatches | 0);
       state.dynamicTranslationsApplied =
         (state.dynamicTranslationsApplied | 0) + (stats.translationsApplied | 0);
+      state.dynamicContextualMatches =
+        (state.dynamicContextualMatches | 0) + (stats.contextualMatches | 0);
+      state.dynamicContextualTranslationsApplied =
+        (state.dynamicContextualTranslationsApplied | 0) +
+        (stats.contextualTranslationsApplied | 0);
     }
     var src = stats.translationCounts || {};
     for (var k in src) {
@@ -293,6 +426,18 @@
         state.translationCounts[k] += src[k] | 0;
       } else {
         state.translationCounts[k] = src[k] | 0;
+      }
+    }
+    var csrc = stats.contextualTranslationCounts || {};
+    for (var ck in csrc) {
+      if (!Object.prototype.hasOwnProperty.call(csrc, ck)) continue;
+      if (!state.contextualTranslationCounts) {
+        state.contextualTranslationCounts = emptyContextualTranslationCounts();
+      }
+      if (Object.prototype.hasOwnProperty.call(state.contextualTranslationCounts, ck)) {
+        state.contextualTranslationCounts[ck] += csrc[ck] | 0;
+      } else {
+        state.contextualTranslationCounts[ck] = csrc[ck] | 0;
       }
     }
   }
@@ -318,8 +463,30 @@
   }
 
   /**
+   * Record one contextual try result (+ optional dynamic counters).
+   * already-translated nodes do not bump contextualTranslationsApplied.
+   */
+  function recordContextualResult(state, result, asDynamic) {
+    if (!result || !result.key) return;
+    state.contextualMatches = (state.contextualMatches | 0) + 1;
+    bumpContextualTranslationCount(state, result.key);
+    if (asDynamic) {
+      state.dynamicContextualMatches =
+        (state.dynamicContextualMatches | 0) + 1;
+    }
+    if (result.applied) {
+      state.contextualTranslationsApplied =
+        (state.contextualTranslationsApplied | 0) + 1;
+      if (asDynamic) {
+        state.dynamicContextualTranslationsApplied =
+          (state.dynamicContextualTranslationsApplied | 0) + 1;
+      }
+    }
+  }
+
+  /**
    * Incremental: one added Text / Element / DocumentFragment.
-   * Always reuses shouldSkipNode + tryApplyExactTranslation / runSafetyScan.
+   * Always reuses shouldSkipNode + exact then contextual / runSafetyScan.
    * Never rescans document.body.
    */
   function processAddedNode(node, state, doc) {
@@ -347,7 +514,12 @@
         return;
       }
       state.candidateCount = (state.candidateCount | 0) + 1;
-      recordExactResult(state, tryApplyExactTranslation(node), true);
+      var exactHit = tryApplyExactTranslation(node);
+      if (exactHit && exactHit.key) {
+        recordExactResult(state, exactHit, true);
+      } else {
+        recordContextualResult(state, tryApplyContextualTranslation(node), true);
+      }
       return;
     }
 
@@ -469,7 +641,7 @@
   }
 
   /**
-   * TreeWalker scan: classify + Phase 1D.1 exact apply on safe candidates.
+   * TreeWalker scan: classify + exact then contextual apply on safe candidates.
    * @param {ParentNode} rootEl
    * @param {Document} doc
    * @param {{ applyExact?: boolean }} [opts]
@@ -487,6 +659,9 @@
       exactMatches: 0,
       translationsApplied: 0,
       translationCounts: emptyTranslationCounts(),
+      contextualMatches: 0,
+      contextualTranslationsApplied: 0,
+      contextualTranslationCounts: emptyContextualTranslationCounts(),
     };
 
     if (!rootEl || !doc || typeof doc.createTreeWalker !== 'function') {
@@ -531,6 +706,24 @@
               } else {
                 stats.translationCounts[result.key] = 1;
               }
+            } else {
+              var cresult = tryApplyContextualTranslation(node);
+              if (cresult && cresult.key) {
+                stats.contextualMatches += 1;
+                if (cresult.applied) {
+                  stats.contextualTranslationsApplied += 1;
+                }
+                if (
+                  Object.prototype.hasOwnProperty.call(
+                    stats.contextualTranslationCounts,
+                    cresult.key,
+                  )
+                ) {
+                  stats.contextualTranslationCounts[cresult.key] += 1;
+                } else {
+                  stats.contextualTranslationCounts[cresult.key] = 1;
+                }
+              }
             }
           }
         }
@@ -559,14 +752,19 @@
       exactMatches: 0,
       translationsApplied: 0,
       translationCounts: emptyTranslationCounts(),
+      contextualMatches: 0,
+      contextualTranslationsApplied: 0,
+      contextualTranslationCounts: emptyContextualTranslationCounts(),
       observerAttached: false,
       mutationBatches: 0,
       mutatedNodesSeen: 0,
       dynamicExactMatches: 0,
       dynamicTranslationsApplied: 0,
+      dynamicContextualMatches: 0,
+      dynamicContextualTranslationsApplied: 0,
       translationObserver: null,
       mutationBatcher: null,
-      phase: '1d.2a-mutation-exact',
+      phase: '1d.2b.1-sidebar-contextual',
       runtimePhase: RUNTIME_PHASE,
       translates: true,
     };
@@ -587,6 +785,13 @@
             counts[k] = src[k] | 0;
           }
         }
+        var ccounts = {};
+        var csrc = state.contextualTranslationCounts || {};
+        for (var ck in csrc) {
+          if (Object.prototype.hasOwnProperty.call(csrc, ck)) {
+            ccounts[ck] = csrc[ck] | 0;
+          }
+        }
         return {
           initialized: !!state.initialized,
           isGlass: !!state.isGlass,
@@ -605,11 +810,18 @@
           exactMatches: state.exactMatches | 0,
           translationsApplied: state.translationsApplied | 0,
           translationCounts: counts,
+          contextualMatches: state.contextualMatches | 0,
+          contextualTranslationsApplied:
+            state.contextualTranslationsApplied | 0,
+          contextualTranslationCounts: ccounts,
           observerAttached: !!state.observerAttached,
           mutationBatches: state.mutationBatches | 0,
           mutatedNodesSeen: state.mutatedNodesSeen | 0,
           dynamicExactMatches: state.dynamicExactMatches | 0,
           dynamicTranslationsApplied: state.dynamicTranslationsApplied | 0,
+          dynamicContextualMatches: state.dynamicContextualMatches | 0,
+          dynamicContextualTranslationsApplied:
+            state.dynamicContextualTranslationsApplied | 0,
           phase: state.phase,
           runtimePhase: state.runtimePhase || RUNTIME_PHASE,
           translates: true,
@@ -620,6 +832,10 @@
       isCandidateTextNode: isCandidateTextNode,
       matchExactTranslation: matchExactTranslation,
       tryApplyExactTranslation: tryApplyExactTranslation,
+      matchContextualTranslation: matchContextualTranslation,
+      tryApplyContextualTranslation: tryApplyContextualTranslation,
+      getContextualRules: getContextualRules,
+      matchesContextualWhen: matchesContextualWhen,
       processAddedNodes: function (nodes) {
         processAddedNodes(nodes, state, typeof document !== 'undefined' ? document : null);
       },
@@ -643,8 +859,13 @@
         '\nskippedEmpty: ' + state.skipCounts.empty,
         '\nexactMatches: ' + (state.exactMatches | 0),
         '\ntranslationsApplied: ' + (state.translationsApplied | 0),
+        '\ncontextualMatches: ' + (state.contextualMatches | 0),
+        '\ncontextualTranslationsApplied: ' +
+          (state.contextualTranslationsApplied | 0),
         '\nobserverAttached: ' + !!state.observerAttached,
         '\ndynamicExactMatches: ' + (state.dynamicExactMatches | 0),
+        '\ndynamicContextualMatches: ' +
+          (state.dynamicContextualMatches | 0),
       );
     } catch (_) {}
   }
@@ -673,7 +894,7 @@
     state.waitingForGlass = false;
     state.skippedNotGlass = false;
     state.runtimePhase = RUNTIME_PHASE;
-    state.phase = '1d.2a-mutation-exact';
+    state.phase = '1d.2b.1-sidebar-contextual';
     var stats = runSafetyScan(doc.body || doc.documentElement, doc, {
       applyExact: true,
     });
@@ -686,6 +907,9 @@
     state.exactMatches = stats.exactMatches;
     state.translationsApplied = stats.translationsApplied;
     state.translationCounts = stats.translationCounts;
+    state.contextualMatches = stats.contextualMatches;
+    state.contextualTranslationsApplied = stats.contextualTranslationsApplied;
+    state.contextualTranslationCounts = stats.contextualTranslationCounts;
     state.scanCompleted = true;
     state.scopeSettled = true;
     state.initialized = true;
@@ -828,7 +1052,7 @@
     }
 
     var state = emptyStatus();
-    state.phase = '1d.2a-mutation-exact';
+    state.phase = '1d.2b.1-sidebar-contextual';
     state.runtimePhase = RUNTIME_PHASE;
     var api = buildApi(state);
     api.__booted = true;
@@ -929,6 +1153,11 @@
     getExactMap: getExactMap,
     matchExactTranslation: matchExactTranslation,
     tryApplyExactTranslation: tryApplyExactTranslation,
+    getContextualRules: getContextualRules,
+    hasAncestorDataAttr: hasAncestorDataAttr,
+    matchesContextualWhen: matchesContextualWhen,
+    matchContextualTranslation: matchContextualTranslation,
+    tryApplyContextualTranslation: tryApplyContextualTranslation,
     runSafetyScan: runSafetyScan,
     processAddedNode: processAddedNode,
     processAddedNodes: processAddedNodes,

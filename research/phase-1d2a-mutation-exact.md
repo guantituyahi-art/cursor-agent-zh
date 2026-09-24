@@ -117,4 +117,11 @@ MutationRecord `addedNodes` → microtask 批处理（Set 去重）→ 对每个
 ## 当前限制
 
 - 仍仅三词 exact；无 Keep/Undo/contextual/dynamic/attributes  
-- 无 1D.2b  
+- 无 1D.2b
+
+## Follow-on: Phase 1D.2b (updated 2026-09-24)
+
+Phase **1D.2b.0** Review/Keep/Undo live discovery is **closed** as not applicable for this Cursor 3.21.18 Agents Window workflow. See [`phase-1d2b0-review-context.md`](phase-1d2b0-review-context.md).
+
+Phase **1D.2b.1** Sidebar Search contextual translation is **in progress / awaiting human acceptance**. See [`phase-1d2b1-sidebar-contextual.md`](phase-1d2b1-sidebar-contextual.md) (`Search` → `搜索` under `data-sidebar-menu-button` only).
+

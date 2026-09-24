@@ -393,7 +393,7 @@ function loadTranslationsPack(repoRoot) {
   for (const key of Object.keys(raw.exact)) {
     if (!allowed.has(key)) {
       throw new Error(
-        `Phase 1D.2a forbids exact key not in PoC allowlist: ${JSON.stringify(key)}`,
+        `Phase 1D.2b.1 forbids exact key not in PoC allowlist: ${JSON.stringify(key)}`,
       );
     }
     const val = raw.exact[key];
@@ -404,15 +404,36 @@ function loadTranslationsPack(repoRoot) {
   }
   for (const need of PHASE_1D1_EXACT_KEYS) {
     if (!Object.prototype.hasOwnProperty.call(exact, need)) {
-      throw new Error(`Phase 1D.2a exact map missing required key: ${need}`);
+      throw new Error(`Phase 1D.2b.1 exact map missing required key: ${need}`);
     }
+  }
+  // Search must never be an exact key (contextual-only).
+  if (Object.prototype.hasOwnProperty.call(exact, 'Search')) {
+    throw new Error('Phase 1D.2b.1 forbids exact key "Search" (use contextual)');
+  }
+  const contextual = [];
+  for (let i = 0; i < raw.contextual.length; i++) {
+    const item = raw.contextual[i];
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      throw new Error(`contextual[${i}] must be an object with en/zh/when`);
+    }
+    if (typeof item.en !== 'string' || !item.en) {
+      throw new Error(`contextual[${i}].en must be a non-empty string`);
+    }
+    if (typeof item.zh !== 'string' || !item.zh) {
+      throw new Error(`contextual[${i}].zh must be a non-empty string`);
+    }
+    if (typeof item.when !== 'string' || !item.when) {
+      throw new Error(`contextual[${i}].when must be a non-empty string`);
+    }
+    contextual.push({ en: item.en, zh: item.zh, when: item.when });
   }
   return {
     exact,
-    contextual: [],
+    contextual,
     dynamic: [],
     schema: 'layered-v1',
-    runtimePhase: '1D.2a',
+    runtimePhase: '1D.2b.1',
   };
 }
 

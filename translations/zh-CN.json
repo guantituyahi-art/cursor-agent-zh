@@ -4,6 +4,12 @@
     "New Project": "新建项目",
     "Automations": "自动化"
   },
-  "contextual": [],
+  "contextual": [
+    {
+      "en": "Search",
+      "zh": "搜索",
+      "when": "sidebar-menu-button"
+    }
+  ],
   "dynamic": []
 }
