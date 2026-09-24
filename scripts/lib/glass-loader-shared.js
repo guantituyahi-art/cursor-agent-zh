@@ -60,11 +60,15 @@ function countMarkerOccurrences(filePath) {
 }
 
 function buildLoaderSource() {
-  // Minimal EOF loader: Glass-only, safe-fail, runtime idempotent guard.
-  return `
-
-;${LOADER_MARKER_COMMENT}
-(() => {
+  // Minimal loader body (placed on its own lines; never glued onto a // comment).
+  // Glass is loaded via native ESM import() in workbench.js — prefer
+  // _VSCODE_FILE_ROOT + dynamic import for the sidecar (avoids script[src]
+  // miss and Trusted Types friction on createElement('script')).
+  return (
+    '\n' +
+    LOADER_MARKER_COMMENT +
+    '\n' +
+    `(() => {
   try {
     if (globalThis.${RUNTIME_GUARD}) return;
     globalThis.${RUNTIME_GUARD} = 1;
@@ -72,6 +76,13 @@ function buildLoaderSource() {
     const err = (...a) => console.error('[cursor-agent-zh]', ...a);
     const SIDECAR = ${JSON.stringify(SIDECAR_NAME)};
     function pickBase() {
+      try {
+        const root = globalThis._VSCODE_FILE_ROOT;
+        if (root) {
+          const base = String(root).replace(/\\/?$/, '/');
+          return base + 'vs/workbench/';
+        }
+      } catch (_) {}
       try {
         const nodes = document.querySelectorAll('script[src]');
         for (let i = 0; i < nodes.length; i++) {
@@ -98,12 +109,30 @@ function buildLoaderSource() {
         return;
       }
       const url = base + SIDECAR;
-      const s = document.createElement('script');
-      s.src = url;
-      s.async = false;
-      s.onload = () => log('sidecar script loaded', url);
-      s.onerror = () => err('sidecar script failed', url);
-      (document.head || document.documentElement).appendChild(s);
+      // Dynamic import (valid in Chromium classic + module). Fallback to script tag.
+      try {
+        import(url).then(
+          () => log('sidecar module loaded', url),
+          (e) => {
+            err('sidecar import failed', url, e);
+            fallbackScript(url);
+          },
+        );
+      } catch (e) {
+        fallbackScript(url);
+      }
+    }
+    function fallbackScript(url) {
+      try {
+        const s = document.createElement('script');
+        s.src = url;
+        s.async = false;
+        s.onload = () => log('sidecar script loaded', url);
+        s.onerror = () => err('sidecar script failed', url);
+        (document.head || document.documentElement).appendChild(s);
+      } catch (e) {
+        err('sidecar script inject error', e);
+      }
     }
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', inject, { once: true });
@@ -113,8 +142,122 @@ function buildLoaderSource() {
   } catch (e) {
     console.error('[cursor-agent-zh] loader error', e);
   }
-})();
-`;
+})();\n`
+  );
+}
+
+/**
+ * Ensure loader text always begins on a fresh line (never continues a // comment).
+ * @param {string} loader
+ */
+function ensureLoaderStartsOnOwnLine(loader) {
+  let s = String(loader).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  s = s.replace(/^\n+/, '\n');
+  if (!s.startsWith('\n')) s = '\n' + s;
+  if (!s.endsWith('\n')) s += '\n';
+  return s;
+}
+
+/**
+ * Compose pristine glass contents + exactly one loader.
+ * Prefer inserting BEFORE `//# sourceMappingURL` so tooling that treats
+ * that pragma as EOF still leaves the loader in the executable region.
+ * Never concatenates onto a line that begins with // .
+ * @param {string|Buffer} pristine
+ * @returns {{ contents: string, placement: string }}
+ */
+function composeGlassWithLoader(pristine) {
+  const original = String(pristine).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  if (original.includes(LOADER_MARKER)) {
+    throw new Error('composeGlassWithLoader: input already contains loader marker');
+  }
+  const loader = ensureLoaderStartsOnOwnLine(buildLoaderSource());
+  const pragma = '//# sourceMappingURL=';
+  const idx = original.lastIndexOf(pragma);
+  let contents;
+  let placement;
+  if (idx >= 0) {
+    // Insert on its own lines immediately before the sourcemap pragma.
+    const before = original.slice(0, idx).replace(/\n*$/, '\n');
+    const after = original.slice(idx);
+    contents = before + loader + after;
+    placement = 'before-sourceMappingURL';
+  } else {
+    const base = original.endsWith('\n') ? original : original + '\n';
+    contents = base.replace(/\n*$/, '\n') + loader.replace(/^\n+/, '');
+    placement = 'eof-append';
+  }
+  assertLoaderNotInLineComment(contents);
+  return { contents, placement };
+}
+
+/**
+ * Fail if marker line is still inside a // line comment (placement bug).
+ * @param {string} contents
+ */
+function assertLoaderNotInLineComment(contents) {
+  const lines = String(contents).split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.includes(LOADER_MARKER)) continue;
+    const trimmed = line.trimStart();
+    // Accept block comment form /* marker */ or code containing marker.
+    // Reject: //....marker or //# sourceMappingURL=...marker
+    if (trimmed.startsWith('//') && !trimmed.startsWith('//*')) {
+      throw new Error(
+        `loader marker sits on a // line comment at line ${i + 1}: ${line.slice(0, 120)}`,
+      );
+    }
+    // Also reject same-line glue: //# sourceMappingURL=.../* marker */
+    if (trimmed.includes('sourceMappingURL=') && trimmed.includes(LOADER_MARKER)) {
+      throw new Error(
+        `loader marker glued onto sourceMappingURL line at line ${i + 1}`,
+      );
+    }
+  }
+  const n = countMarkerInString(contents);
+  if (n !== 1) {
+    throw new Error(`expected exactly 1 loader marker after compose, found ${n}`);
+  }
+}
+
+function countMarkerInString(s) {
+  const needle = LOADER_MARKER;
+  let count = 0;
+  let idx = 0;
+  while ((idx = s.indexOf(needle, idx)) !== -1) {
+    count += 1;
+    idx += needle.length;
+  }
+  return count;
+}
+
+/**
+ * Write glass = backup + one safe loader (never append a second loader).
+ * @param {string} glassPath
+ * @param {string} backupPath
+ */
+function reinstallLoaderFromBackup(glassPath, backupPath) {
+  verifyExistingBackupOrThrow(backupPath);
+  const pristine = fs.readFileSync(backupPath);
+  const sha = sha256File(backupPath);
+  if (sha !== PRISTINE_GLASS_SHA256) {
+    throw new Error(
+      `reinstall: backup SHA ${sha} != pristine ${PRISTINE_GLASS_SHA256}`,
+    );
+  }
+  const { contents, placement } = composeGlassWithLoader(pristine.toString('utf8'));
+  fs.writeFileSync(glassPath, contents, { encoding: 'utf8' });
+  const after = countMarkerOccurrences(glassPath);
+  if (after !== 1) {
+    throw new Error(`reinstall: marker count=${after}, expected 1`);
+  }
+  return {
+    placement,
+    glassSha256: sha256File(glassPath),
+    backupSha256: sha,
+    markerCount: after,
+  };
 }
 
 function resolveRepoRoot(explicit) {
@@ -221,14 +364,63 @@ function deploySidecar(repoRoot, sidecarPath) {
 }
 
 function parseArgs(argv) {
-  const out = { app: null, repo: null, _: [] };
+  const out = {
+    app: null,
+    repo: null,
+    reinstallLoader: false,
+    clearCodeCache: false,
+    _: [],
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--app') out.app = argv[++i];
     else if (a === '--repo') out.repo = argv[++i];
+    else if (a === '--reinstall-loader') out.reinstallLoader = true;
+    else if (a === '--clear-code-cache') out.clearCodeCache = true;
     else out._.push(a);
   }
   return out;
+}
+
+/**
+ * Clear Cursor CachedData chrome/js for the running product commit.
+ * Must be called when Cursor is not running (caller enforces).
+ * @param {string} productPath
+ * @param {{ appData?: string }} [opts]
+ */
+function clearCursorJsCodeCache(productPath, opts) {
+  const product = JSON.parse(fs.readFileSync(productPath, 'utf8'));
+  const commit = product.commit;
+  if (!commit || typeof commit !== 'string') {
+    throw new Error('product.json missing commit; cannot locate CachedData');
+  }
+  const appData =
+    (opts && opts.appData) ||
+    process.env.APPDATA ||
+    process.env.XDG_CONFIG_HOME ||
+    '';
+  if (!appData) {
+    throw new Error('APPDATA not set; pass opts.appData for CachedData root');
+  }
+  const jsDir = path.join(appData, 'Cursor', 'CachedData', commit, 'chrome', 'js');
+  if (!fs.existsSync(jsDir)) {
+    return { commit, jsDir, removed: 0, skipped: true };
+  }
+  let removed = 0;
+  for (const name of fs.readdirSync(jsDir)) {
+    const full = path.join(jsDir, name);
+    const st = fs.statSync(full);
+    if (st.isFile()) {
+      fs.unlinkSync(full);
+      removed += 1;
+    } else if (st.isDirectory() && name === 'index-dir') {
+      for (const n2 of fs.readdirSync(full)) {
+        fs.unlinkSync(path.join(full, n2));
+        removed += 1;
+      }
+    }
+  }
+  return { commit, jsDir, removed, skipped: false };
 }
 
 module.exports = {
@@ -242,6 +434,12 @@ module.exports = {
   fileContainsMarker,
   countMarkerOccurrences,
   buildLoaderSource,
+  ensureLoaderStartsOnOwnLine,
+  composeGlassWithLoader,
+  assertLoaderNotInLineComment,
+  countMarkerInString,
+  reinstallLoaderFromBackup,
+  clearCursorJsCodeCache,
   resolveRepoRoot,
   resolveAppRoot,
   pathsForApp,

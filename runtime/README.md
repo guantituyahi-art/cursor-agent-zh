@@ -4,13 +4,21 @@
 
 **`bootstrap.js` 是 runtime 唯一源码。**
 
-Cursor 安装目录中的 `cursor-agent-zh-bootstrap.js` 只是由
-`scripts/deploy-glass-loader.js` 从本文件复制生成的部署产物，不要在安装目录单独改逻辑。
+安装目录 `cursor-agent-zh-bootstrap.js` 仅由 `scripts/deploy-glass-loader.js` 复制生成。
 
-## Phase 1A / 1B.1（当前）
+## Phase 1C（已通过人工验收，2026-09-24）
 
-- 内容：仅 `console.log("[cursor-agent-zh] runtime loaded");`（外加本文件头注释）。
-- 由 Glass EOF loader（方案 B）加载；loader 含 `globalThis.__cursorAgentZhLoader` 运行时幂等 guard。
-- **尚未**实现翻译器 / MutationObserver / 词典加载。
+安全骨架（**不翻译**）：
 
-约束见 `docs/architecture.md` 与 `research/phase-1b1-deploy.md`。
+- Glass 门禁：`body[data-cursor-glass-mode="true"]`（属性缺失时有界等待，避免 timing race）
+- Translation Invariants：`shouldSkipNode`（message / code / editable）
+- 一次只读 TreeWalker 扫描 + 统计日志（不打印正文）
+- `globalThis.__cursorAgentZhRuntime.getStatus()`
+- 与 loader guard `__cursorAgentZhLoader` 分责
+
+测试：`node scripts/test-runtime-safety.js`、`node scripts/test-loader-placement.js`  
+说明：`research/phase-1c-runtime-safety.md`；blocker：`phase-1c-loader-blocker.md`、`phase-1c-glass-scope-race.md`
+
+## 尚未实现
+
+MutationObserver、词典应用、UI 文案替换、Settings 汉化。

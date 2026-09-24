@@ -5,11 +5,46 @@
  * Phase 1B.1 — idempotent Glass loader deploy.
  * Source of truth: runtime/bootstrap.js → install sidecar only.
  * Does not translate UI. Does not touch desktop / product.json checksums.
+ *
+ * Flags:
+ *   --reinstall-loader  Restore glass from pristine backup + write one safe loader
+ *                       (never append a second loader onto an old injection).
+ *   --clear-code-cache  Delete Cursor CachedData chrome/js for this product commit
+ *                       (Cursor must not be running).
  */
 
 const fs = require('fs');
 const path = require('path');
 const shared = require('./lib/glass-loader-shared');
+
+function cursorProcessesRunning() {
+  if (process.platform !== 'win32') {
+    try {
+      const { execFileSync } = require('child_process');
+      const out = execFileSync('ps', ['-A', '-o', 'comm='], {
+        encoding: 'utf8',
+      });
+      return /\b[Cc]ursor\b/.test(out);
+    } catch (_) {
+      return false;
+    }
+  }
+  try {
+    const { execFileSync } = require('child_process');
+    const out = execFileSync(
+      'powershell.exe',
+      [
+        '-NoProfile',
+        '-Command',
+        "Get-CimInstance Win32_Process -Filter \"Name='Cursor.exe'\" | Select-Object -ExpandProperty ProcessId",
+      ],
+      { encoding: 'utf8', windowsHide: true },
+    );
+    return /[0-9]/.test(out);
+  } catch (_) {
+    return false;
+  }
+}
 
 function main() {
   const args = shared.parseArgs(process.argv.slice(2));
@@ -42,13 +77,27 @@ function main() {
   console.log(`[deploy] sidecar sha256=${side.sha256}`);
 
   const hasMarker = shared.fileContainsMarker(p.glass);
-  if (hasMarker) {
+
+  if (args.reinstallLoader) {
+    console.log('[deploy] --reinstall-loader: rebuild glass from backup + one loader');
+    if (!fs.existsSync(p.backup)) {
+      throw new Error(
+        'STOP: --reinstall-loader requires an existing verified backup',
+      );
+    }
+    const result = shared.reinstallLoaderFromBackup(p.glass, p.backup);
+    console.log(`[deploy] placement=${result.placement}`);
+    console.log(`[deploy] glass sha256=${result.glassSha256}`);
+    console.log(`[deploy] backup sha256=${result.backupSha256} (unchanged)`);
+    console.log(`loader installed`);
+    console.log(`sidecar deployed`);
+  } else if (hasMarker) {
     const n = shared.countMarkerOccurrences(p.glass);
     console.log(`loader already installed (marker count=${n})`);
     console.log('sidecar refreshed from source of truth');
     if (n !== 1) {
       console.warn(
-        `[deploy] WARN: expected marker count 1, found ${n}. Not appending; inspect manually.`,
+        `[deploy] WARN: expected marker count 1, found ${n}. Not appending; use --reinstall-loader.`,
       );
     }
   } else {
@@ -60,12 +109,6 @@ function main() {
       if (shared.fileContainsMarker(p.backup)) {
         throw new Error('STOP: freshly copied backup unexpectedly contains marker');
       }
-      // First-time backup on a never-injected tree may not match Phase 1A SHA
-      // (different Cursor build). For this project's pinned 3.21.18 PoC we
-      // require match when a backup already existed; for brand-new backup we
-      // record SHA and continue only if it equals pristine OR user opts in.
-      // Hard rule for this repo phase: new backup must equal recorded pristine
-      // for the known 3.21.18 install under test.
       if (sha !== shared.PRISTINE_GLASS_SHA256) {
         fs.unlinkSync(p.backup);
         throw new Error(
@@ -80,17 +123,37 @@ function main() {
       );
     }
 
-    const loader = shared.buildLoaderSource().replace(/\r?\n/g, '\n');
-    fs.appendFileSync(p.glass, loader, { encoding: 'utf8' });
+    const pristine = fs.readFileSync(p.backup, 'utf8');
+    const { contents, placement } = shared.composeGlassWithLoader(pristine);
+    fs.writeFileSync(p.glass, contents, { encoding: 'utf8' });
     const after = shared.countMarkerOccurrences(p.glass);
     if (after !== 1) {
       throw new Error(
-        `STOP: after append marker count=${after}, expected 1. Manual inspect required.`,
+        `STOP: after compose marker count=${after}, expected 1. Manual inspect required.`,
       );
     }
+    console.log(`[deploy] placement=${placement}`);
     console.log('loader installed');
     console.log('sidecar deployed');
     console.log(`[deploy] glass sha256=${shared.sha256File(p.glass)}`);
+  }
+
+  if (args.clearCodeCache) {
+    if (cursorProcessesRunning()) {
+      throw new Error(
+        'STOP: --clear-code-cache refused while Cursor.exe appears to be running. ' +
+          'Fully quit Cursor, then re-run with --clear-code-cache.',
+      );
+    }
+    const cleared = shared.clearCursorJsCodeCache(p.product);
+    console.log(
+      `[deploy] cleared CachedData chrome/js commit=${cleared.commit} removed=${cleared.removed} dir=${cleared.jsDir}`,
+    );
+  } else {
+    console.log(
+      '[deploy] NOTE: if Agents Window still shows __cursorAgentZhLoader === undefined, ' +
+        'fully quit Cursor and re-run with --clear-code-cache (stale vscode-file V8 CachedData).',
+    );
   }
 
   const productShaAfter = shared.sha256File(p.product);

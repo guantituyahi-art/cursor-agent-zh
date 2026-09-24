@@ -1,7 +1,7 @@
 # 初步架构（Phase 0）
 
-> 状态：**运行时翻译器尚未实现**。本文仅描述目标架构与约束，供后续阶段落地。  
-> Phase 0 文档与脚手架已完成；**Phase 1** 从注入加载研究与 PoC 文案开始（见下文）。
+> 状态：**运行时翻译器尚未实现**（Phase 1C 仅安全骨架）。  
+> Phase 0–1B.1 完成 loader 部署；**Phase 1C** 将 Translation Invariants 落实为 `runtime/bootstrap.js` 中的 `shouldSkipNode` + 只读扫描（见 `research/phase-1c-runtime-safety.md`）。Phase 1D 才开始真正翻译。
 
 ## 目标
 
@@ -162,6 +162,10 @@
 ### Phase 1B.1 部署收口（2026-09-24）
 
 见 **`research/phase-1b1-deploy.md`**：`scripts/deploy-glass-loader.js` / `restore-glass-loader.js`；SoT=`runtime/bootstrap.js`；自动 Test A–E 通过。人工 DevTools 三项已于 2026-09-24 用户确认通过（`phase-1b-load-entry.md` §5）。
+
+### Phase 1C Runtime Safety（2026-09-24）
+
+见 **`research/phase-1c-runtime-safety.md`**（及 loader-blocker / glass-scope-race）。`runtime/bootstrap.js`：Glass 门禁（含 pending 有界等待）、Invariants 跳过、只读统计扫描、`getStatus()`；**无**文案修改。自动门禁与人工验收均已于 2026-09-24 通过。**未开始** Phase 1D。
 
 ## E. Phase 1 成功标准（PoC 门禁 — 先于 Settings 全量本地化）
 

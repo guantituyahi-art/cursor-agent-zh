@@ -7,6 +7,7 @@
 | `deploy-glass-loader.js` | 幂等部署 Glass EOF loader + 从 SoT 复制 sidecar |
 | `restore-glass-loader.js` | 用已验证原始 backup 恢复 glass，并删除 sidecar |
 | `lib/glass-loader-shared.js` | 共享常量与检查（marker、checksum 门禁、备份规则） |
+| `test-runtime-safety.js` | Phase 1C：`shouldSkipNode` 等纯函数分类测试（无 jsdom） |
 
 ### Source of Truth
 
