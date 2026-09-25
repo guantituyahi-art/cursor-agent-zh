@@ -25,7 +25,7 @@ function text(value, parent) {
 }
 function fixture(label, description, options = {}) {
   const body = el('body', { 'data-cursor-glass-mode': options.glass === false ? 'false' : 'true' });
-  const panel = el('div', { 'data-component': 'glass-settings-panel', 'data-react-tab': options.tab || 'general' }, body);
+  const panel = el('div', { 'data-component': 'glass-settings-panel', 'data-react-tab': options.tab || 'chat' }, body);
   const row = el('div', { className: 'ui-field-group__entry' }, panel);
   const labelBox = el('div', { className: options.labelClass || 'ui-field-group__entry-label' }, row);
   const descriptionBox = el('div', { className: options.descriptionClass || 'ui-field-group__entry-description' }, row);
@@ -47,28 +47,25 @@ function doc() {
 }
 
 const pairs = [
-  ['Tips', '提示', 'Show rotating tips on the empty screen', '在空白页面轮播使用提示'],
-  ['Window Restoration', '窗口恢复', 'Controls which windows Cursor restores on startup', '控制 Cursor 启动时恢复哪些窗口'],
-  ['System Notifications', '系统通知', 'Show system notifications when Agent completes or needs attention', '当智能体完成任务或需要关注时显示系统通知'],
-  ['Warning Notifications', '警告通知', 'Show notifications for less urgent issues', '对不太紧急的问题显示通知'],
-  ['Continue Interrupted Agents', '继续中断的智能体任务', 'Automatically resume working on agents and their subagents after a reload or restart', '重新加载或重启后，自动恢复智能体及其子智能体的任务'],
-  ['System Tray Icon', '系统托盘图标', 'Show Cursor in system tray', '在系统托盘中显示 Cursor'],
-  ['Completion Sound', '完成提示音', 'Play a sound when agents finish or need attention', '智能体完成任务或需要关注时播放提示音'],
+  ['Default Environment', '默认环境', 'Where new agents start by default', '新建智能体默认启动的环境'],
+  ['Default Model', '默认模型', 'What model new agents use by default', '新建智能体默认使用的模型'],
+  ['Usage Summary', '用量摘要', 'When to show the usage summary at the bottom of the chat pane', '何时在聊天面板底部显示用量摘要'],
+  ['Agent Autocomplete', '智能体提示词补全', 'Contextual suggestions while prompting Agent', '编写智能体提示词时提供上下文建议'],
+  ['Legacy Terminal Tool', '旧版终端工具', 'Use the legacy terminal tool in agent mode, for use on systems with unsupported shell configurations', '在智能体模式下使用旧版终端工具，适用于不受支持的 Shell 配置'],
 ];
 assert.strictEqual(runtime.RUNTIME_PHASE, '2F.1');
 assert.strictEqual(pack.contextual.length, 65);
-
 for (const [enLabel, zhLabel, enDescription, zhDescription] of pairs) {
   const f = fixture('  ' + enLabel + '  ', '  ' + enDescription + '  ');
-  assert.strictEqual(runtime.matchesContextualWhen('general-settings-label', f.labelNode), true);
-  assert.strictEqual(runtime.matchesContextualWhen('general-settings-description', f.descriptionNode), true);
+  assert.strictEqual(runtime.matchesContextualWhen('agents-settings-label', f.labelNode), true);
+  assert.strictEqual(runtime.matchesContextualWhen('agents-settings-description', f.descriptionNode), true);
   assert.strictEqual(runtime.tryApplyContextualTranslation(f.labelNode).key, enLabel);
   assert.strictEqual(runtime.tryApplyContextualTranslation(f.descriptionNode).key, enDescription);
   assert.strictEqual(f.labelNode.nodeValue, '  ' + zhLabel + '  ');
   assert.strictEqual(f.descriptionNode.nodeValue, '  ' + zhDescription + '  ');
 }
 for (const opts of [
-  { glass: false }, { tab: 'appearance' }, { tab: 'chat' },
+  { glass: false }, { tab: 'general' }, { tab: 'appearance' },
   { labelClass: 'ui-field-group__entry-description', descriptionClass: 'ui-field-group__entry-label' },
 ]) {
   const f = fixture(pairs[0][0], pairs[0][2], opts);
@@ -77,39 +74,40 @@ for (const opts of [
 }
 {
   const f = fixture(pairs[0][0], pairs[0][2]);
-  assert.strictEqual(runtime.tryApplyContextualTranslation(text('Tips', f.descriptionBox)), null);
+  assert.strictEqual(runtime.tryApplyContextualTranslation(text('Default Environment', f.row)), null);
+  assert.strictEqual(runtime.tryApplyContextualTranslation(text('Default Environment', f.descriptionBox)), null);
   assert.strictEqual(runtime.tryApplyContextualTranslation(text(pairs[0][2], f.labelBox)), null);
-  assert.strictEqual(runtime.tryApplyContextualTranslation(text('Tips', f.row)), null);
-  assert.strictEqual(runtime.tryApplyContextualTranslation(text('System', f.row)), null);
+  assert.strictEqual(runtime.tryApplyContextualTranslation(text('Run Mode', f.labelBox)), null);
+  assert.strictEqual(runtime.tryApplyContextualTranslation(text('Last Used', f.row)), null);
 }
 for (const attrs of [
   { 'data-message-kind': 'human' }, { 'data-message-kind': 'thinking' },
   { 'data-message-kind': 'tool' }, { 'data-message-role': 'ai' },
 ]) {
-  const f = fixture('Tips', pairs[0][2]);
-  const message = el('div', attrs, f.labelBox);
-  assert.strictEqual(runtime.tryApplyContextualTranslation(text('Tips', message)), null);
+  const f = fixture(pairs[0][0], pairs[0][2]);
+  const box = el('div', attrs, f.labelBox);
+  assert.strictEqual(runtime.tryApplyContextualTranslation(text('Default Environment', box)), null);
 }
 {
-  const f = fixture('Tips', pairs[0][2]);
+  const f = fixture(pairs[0][0], pairs[0][2]);
   const code = el('code', {}, f.descriptionBox);
   assert.strictEqual(runtime.tryApplyContextualTranslation(text(pairs[0][2], code)), null);
   const editable = el('div', { contenteditable: 'true' }, f.labelBox);
-  assert.strictEqual(runtime.tryApplyContextualTranslation(text('Tips', editable)), null);
+  assert.strictEqual(runtime.tryApplyContextualTranslation(text('Default Environment', editable)), null);
 }
 {
-  const f = fixture('Tips', pairs[0][2]);
+  const f = fixture(pairs[0][0], pairs[0][2]);
   const stats = runtime.runSafetyScan(f.body, doc(), { applyExact: true });
-  assert.strictEqual(f.labelNode.nodeValue, '提示');
+  assert.strictEqual(f.labelNode.nodeValue, pairs[0][1]);
   assert.strictEqual(f.descriptionNode.nodeValue, pairs[0][3]);
   assert.strictEqual(stats.contextualTranslationsApplied, 2);
 }
 {
-  const f = fixture('Warning Notifications', pairs[3][2]);
+  const f = fixture(pairs[4][0], pairs[4][2]);
   const state = { skipCounts: { message: 0, code: 0, editable: 0, empty: 0 } };
   runtime.processAddedNodes([f.row], state, doc());
-  assert.strictEqual(f.labelNode.nodeValue, '警告通知');
-  assert.strictEqual(f.descriptionNode.nodeValue, pairs[3][3]);
+  assert.strictEqual(f.labelNode.nodeValue, pairs[4][1]);
+  assert.strictEqual(f.descriptionNode.nodeValue, pairs[4][3]);
   assert.strictEqual(state.dynamicContextualTranslationsApplied, 2);
 }
-console.log('OK Phase 2D.2 General settings: scope, safety, scan, dynamic');
+console.log('OK Phase 2F.1 Agents settings: 5 rows, safety, scan, dynamic');

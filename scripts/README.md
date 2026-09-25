@@ -23,6 +23,7 @@
     node scripts/test-appearance-settings-descriptions.js
     node scripts/test-general-settings.js
     node scripts/test-settings-navigation.js
+    node scripts/test-agents-settings.js
     node scripts/test-loader-placement.js
     node scripts/test-versioned-backup.js
 

@@ -63,7 +63,17 @@
     { "en": "Tab", "zh": "标签页", "when": "settings-sidebar-label" },
     { "en": "Code Intelligence", "zh": "代码智能", "when": "settings-sidebar-label" },
     { "en": "Beta", "zh": "测试版", "when": "settings-sidebar-label" },
-    { "en": "Docs", "zh": "文档", "when": "settings-sidebar-label" }
+    { "en": "Docs", "zh": "文档", "when": "settings-sidebar-label" },
+    { "en": "Default Environment", "zh": "默认环境", "when": "agents-settings-label" },
+    { "en": "Where new agents start by default", "zh": "新建智能体默认启动的环境", "when": "agents-settings-description" },
+    { "en": "Default Model", "zh": "默认模型", "when": "agents-settings-label" },
+    { "en": "What model new agents use by default", "zh": "新建智能体默认使用的模型", "when": "agents-settings-description" },
+    { "en": "Usage Summary", "zh": "用量摘要", "when": "agents-settings-label" },
+    { "en": "When to show the usage summary at the bottom of the chat pane", "zh": "何时在聊天面板底部显示用量摘要", "when": "agents-settings-description" },
+    { "en": "Agent Autocomplete", "zh": "智能体提示词补全", "when": "agents-settings-label" },
+    { "en": "Contextual suggestions while prompting Agent", "zh": "编写智能体提示词时提供上下文建议", "when": "agents-settings-description" },
+    { "en": "Legacy Terminal Tool", "zh": "旧版终端工具", "when": "agents-settings-label" },
+    { "en": "Use the legacy terminal tool in agent mode, for use on systems with unsupported shell configurations", "zh": "在智能体模式下使用旧版终端工具，适用于不受支持的 Shell 配置", "when": "agents-settings-description" }
   ],
   "dynamic": []
 }

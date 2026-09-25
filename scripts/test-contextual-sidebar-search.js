@@ -20,7 +20,7 @@ const POC_PACK = {
   ],
   dynamic: [],
   schema: 'layered-v1',
-  runtimePhase: '2E.1',
+  runtimePhase: '2F.1',
 };
 
 globalThis.__cursorAgentZhTranslations = POC_PACK;
@@ -127,7 +127,7 @@ function test(name, fn) {
 
 const doc = attachTreeWalker({});
 
-assert.strictEqual(safety.RUNTIME_PHASE, '2E.1');
+assert.strictEqual(safety.RUNTIME_PHASE, '2F.1');
 
 // A — sidebar Search → 搜索
 test('A Search under data-sidebar-menu-button → 搜索', () => {

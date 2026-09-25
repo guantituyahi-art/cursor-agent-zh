@@ -1,12 +1,12 @@
 /**
- * cursor-agent-zh — Phase 2E.1 Settings Sidebar Navigation
+ * cursor-agent-zh — Phase 2F.1 Agents Settings Static Text
  *
  * SOURCE OF TRUTH for runtime logic. Deploy builds install sidecar from:
  *   translations/zh-CN.json  (dictionary SoT)
  *   runtime/bootstrap.js     (this file — logic SoT)
  * → out/vs/workbench/cursor-agent-zh-bootstrap.js
  *
- * Phase 2E.1: keep 1C/1D.1/1D.2a scan + one Glass-only MutationObserver
+ * Phase 2F.1: keep 1C/1D.1/1D.2a scan + one Glass-only MutationObserver
  * (childList+subtree). Pipeline: safety → exact → contextual → nodeValue.
  * Contextual rules require a researched DOM scope. No attributes or characterData.
  * Dictionary is NEVER hard-coded here; read globalThis.__cursorAgentZhTranslations
@@ -169,7 +169,7 @@
   }
 
   var TRANSLATIONS_GLOBAL = '__cursorAgentZhTranslations';
-  var RUNTIME_PHASE = '2E.1';
+  var RUNTIME_PHASE = '2F.1';
 
   /**
    * Dictionary pack from deploy injection (or test harness). Never hard-coded.
@@ -347,6 +347,12 @@
     }
     if (when === 'settings-sidebar-label') {
       return isSettingsSidebarLabel(node);
+    }
+    if (when === 'agents-settings-label') {
+      return isSettingsText(node, 'chat', 'ui-field-group__entry-label');
+    }
+    if (when === 'agents-settings-description') {
+      return isSettingsText(node, 'chat', 'ui-field-group__entry-description');
     }
     return false;
   }
@@ -829,7 +835,7 @@
       dynamicContextualTranslationsApplied: 0,
       translationObserver: null,
       mutationBatcher: null,
-      phase: '2e.1-settings-sidebar',
+      phase: '2f.1-agents-settings',
       runtimePhase: RUNTIME_PHASE,
       translates: true,
     };
@@ -959,7 +965,7 @@
     state.waitingForGlass = false;
     state.skippedNotGlass = false;
     state.runtimePhase = RUNTIME_PHASE;
-    state.phase = '2e.1-settings-sidebar';
+    state.phase = '2f.1-agents-settings';
     var stats = runSafetyScan(doc.body || doc.documentElement, doc, {
       applyExact: true,
     });
@@ -1117,7 +1123,7 @@
     }
 
     var state = emptyStatus();
-    state.phase = '2e.1-settings-sidebar';
+    state.phase = '2f.1-agents-settings';
     state.runtimePhase = RUNTIME_PHASE;
     var api = buildApi(state);
     api.__booted = true;
