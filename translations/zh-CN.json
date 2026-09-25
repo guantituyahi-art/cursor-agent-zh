@@ -35,7 +35,15 @@
     { "en": "Font size for code editors and diffs", "zh": "代码编辑器和差异视图的字号", "when": "appearance-settings-description" },
     { "en": "Override the Cursor user interface typeface", "zh": "覆盖 Cursor 界面使用的字体", "when": "appearance-settings-description" },
     { "en": "Override the font for code editors and diffs", "zh": "覆盖代码编辑器和差异视图使用的字体", "when": "appearance-settings-description" },
-    { "en": "Switch to a high contrast theme when your OS is in a high contrast mode", "zh": "操作系统启用高对比度模式时，切换到高对比度主题", "when": "appearance-settings-description" }
+    { "en": "Switch to a high contrast theme when your OS is in a high contrast mode", "zh": "操作系统启用高对比度模式时，切换到高对比度主题", "when": "appearance-settings-description" },
+    { "en": "Tips", "zh": "提示", "when": "general-settings-label" },
+    { "en": "Show rotating tips on the empty screen", "zh": "在空白页面轮播使用提示", "when": "general-settings-description" },
+    { "en": "Window Restoration", "zh": "窗口恢复", "when": "general-settings-label" },
+    { "en": "Controls which windows Cursor restores on startup", "zh": "控制 Cursor 启动时恢复哪些窗口", "when": "general-settings-description" },
+    { "en": "System Notifications", "zh": "系统通知", "when": "general-settings-label" },
+    { "en": "Show system notifications when Agent completes or needs attention", "zh": "当智能体完成任务或需要关注时显示系统通知", "when": "general-settings-description" },
+    { "en": "Warning Notifications", "zh": "警告通知", "when": "general-settings-label" },
+    { "en": "Show notifications for less urgent issues", "zh": "对不太紧急的问题显示通知", "when": "general-settings-description" }
   ],
   "dynamic": []
 }

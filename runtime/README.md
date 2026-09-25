@@ -9,7 +9,7 @@
 
 安装目录 `cursor-agent-zh-bootstrap.js` 由 `scripts/deploy-glass-loader.js` **生成**（注入 `__cursorAgentZhTranslations` + 拼接 bootstrap）。**不要**手改安装产物；**不要**在 bootstrap 内维护第二份词典。
 
-## Phase 2C.2（当前代码；十三条 Appearance 说明已实机验收）
+## Phase 2D.1（当前代码；General 四组文案已实机验收）
 
 Exact PoC + MutationObserver（**仅**三个完整串；Glass DOM 校准）。初始扫描保留，observer 增量补充：
 
@@ -17,7 +17,7 @@ Exact PoC + MutationObserver（**仅**三个完整串；Glass DOM 校准）。�
 - `New Project` → `新建项目`
 - `Automations` → `自动化`
 
-管线：Glass → shouldSkipNode → exact full-string → contextual → nodeValue。侧栏 Search 沿用 data-sidebar-menu-button；Appearance 的十三个标签与十三条说明分别要求 Glass body、glass-settings-panel 的 data-react-tab=appearance 和对应的 ui-field-group__entry-label / ui-field-group__entry-description。初始扫描后，一个 childList MutationObserver 处理新增节点；thinking kind 与 ai role 也属于消息排除范围。
+管线：Glass → shouldSkipNode → exact full-string → contextual → nodeValue。侧栏 Search 沿用 data-sidebar-menu-button；Appearance 的十三个标签与十三条说明要求 Glass、appearance 页面与对应标签/说明容器；General 的四组文案使用相同容器并要求 general 页面标记。初始扫描后，一个 childList MutationObserver 处理新增节点；thinking kind 与 ai role 也属于消息排除范围。
 
 测试：
 
@@ -26,6 +26,7 @@ Exact PoC + MutationObserver（**仅**三个完整串；Glass DOM 校准）。�
 - `node scripts/test-mutation-exact.js`
 - node scripts/test-appearance-settings-labels.js
 - node scripts/test-appearance-settings-descriptions.js
+- node scripts/test-general-settings.js
 
 说明：`research/phase-1d2a-mutation-exact.md`（1D.1 记录见 `phase-1d1-exact-translation.md`）
 

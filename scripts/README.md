@@ -21,6 +21,7 @@
     node scripts/test-contextual-sidebar-search.js
     node scripts/test-appearance-settings-labels.js
     node scripts/test-appearance-settings-descriptions.js
+    node scripts/test-general-settings.js
     node scripts/test-loader-placement.js
     node scripts/test-versioned-backup.js
 

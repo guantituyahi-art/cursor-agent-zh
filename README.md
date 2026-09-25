@@ -10,7 +10,7 @@
 
 ## 当前阶段
 
-Phase 1D.2b.1 已在 Cursor 3.21.18 人工验收：Glass 内三个 exact 文案及侧栏 Search 上下文翻译。Cursor 3.22.7 兼容适配已验收；Phase 2A 三页首轮盘点已完成，Phase 2B.1 的 Appearance 四个标签已获实机显示与控件反馈；Phase 2B.2 的同页九个新增标签已获实机确认；Phase 2C.1 的四条 Appearance 说明文案已获实机确认；Phase 2C.2 的同页九条新增说明已获实机确认。Console 基线仍有未判定项。运行时与部署细节见 [架构](docs/architecture.md) 和 [3.22.7 升级审计](research/cursor-3.22.7-upgrade-compat.md)。
+Phase 1D.2b.1 已在 Cursor 3.21.18 人工验收：Glass 内三个 exact 文案及侧栏 Search 上下文翻译。Cursor 3.22.7 兼容适配已验收；Phase 2A 三页首轮盘点已完成，Phase 2B.1 的 Appearance 四个标签已获实机显示与控件反馈；Phase 2B.2 的同页九个新增标签已获实机确认；Phase 2C.1 的四条 Appearance 说明文案已获实机确认；Phase 2C.2 的同页九条新增说明已获实机确认；Phase 2D.1 的 General 页四组静态文案已获实机确认。Console 基线仍有未判定项。运行时与部署细节见 [架构](docs/architecture.md) 和 [3.22.7 升级审计](research/cursor-3.22.7-upgrade-compat.md)。
 
 ## 版本说明
 
@@ -54,6 +54,7 @@ scripts/        部署、还原与回归测试
 - [Phase 2B.2 Appearance 标签扩展](research/phase-2b2-appearance-labels.md)
 - [Phase 2C.1 Appearance 说明文案](research/phase-2c1-appearance-descriptions.md)
 - [Phase 2C.2 Appearance 说明扩展](research/phase-2c2-appearance-descriptions.md)
+- [Phase 2D.1 General 静态文案](research/phase-2d1-general-settings.md)
 - [既有项目深度分析](research/existing-projects.md)
 
 ## 许可
