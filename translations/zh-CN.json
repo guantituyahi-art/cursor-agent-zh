@@ -43,7 +43,13 @@
     { "en": "System Notifications", "zh": "系统通知", "when": "general-settings-label" },
     { "en": "Show system notifications when Agent completes or needs attention", "zh": "当智能体完成任务或需要关注时显示系统通知", "when": "general-settings-description" },
     { "en": "Warning Notifications", "zh": "警告通知", "when": "general-settings-label" },
-    { "en": "Show notifications for less urgent issues", "zh": "对不太紧急的问题显示通知", "when": "general-settings-description" }
+    { "en": "Show notifications for less urgent issues", "zh": "对不太紧急的问题显示通知", "when": "general-settings-description" },
+    { "en": "Continue Interrupted Agents", "zh": "继续中断的智能体任务", "when": "general-settings-label" },
+    { "en": "Automatically resume working on agents and their subagents after a reload or restart", "zh": "重新加载或重启后，自动恢复智能体及其子智能体的任务", "when": "general-settings-description" },
+    { "en": "System Tray Icon", "zh": "系统托盘图标", "when": "general-settings-label" },
+    { "en": "Show Cursor in system tray", "zh": "在系统托盘中显示 Cursor", "when": "general-settings-description" },
+    { "en": "Completion Sound", "zh": "完成提示音", "when": "general-settings-label" },
+    { "en": "Play a sound when agents finish or need attention", "zh": "智能体完成任务或需要关注时播放提示音", "when": "general-settings-description" }
   ],
   "dynamic": []
 }

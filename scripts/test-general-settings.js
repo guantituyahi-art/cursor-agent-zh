@@ -51,9 +51,12 @@ const pairs = [
   ['Window Restoration', '窗口恢复', 'Controls which windows Cursor restores on startup', '控制 Cursor 启动时恢复哪些窗口'],
   ['System Notifications', '系统通知', 'Show system notifications when Agent completes or needs attention', '当智能体完成任务或需要关注时显示系统通知'],
   ['Warning Notifications', '警告通知', 'Show notifications for less urgent issues', '对不太紧急的问题显示通知'],
+  ['Continue Interrupted Agents', '继续中断的智能体任务', 'Automatically resume working on agents and their subagents after a reload or restart', '重新加载或重启后，自动恢复智能体及其子智能体的任务'],
+  ['System Tray Icon', '系统托盘图标', 'Show Cursor in system tray', '在系统托盘中显示 Cursor'],
+  ['Completion Sound', '完成提示音', 'Play a sound when agents finish or need attention', '智能体完成任务或需要关注时播放提示音'],
 ];
-assert.strictEqual(runtime.RUNTIME_PHASE, '2D.1');
-assert.strictEqual(pack.contextual.length, 35);
+assert.strictEqual(runtime.RUNTIME_PHASE, '2D.2');
+assert.strictEqual(pack.contextual.length, 41);
 
 for (const [enLabel, zhLabel, enDescription, zhDescription] of pairs) {
   const f = fixture('  ' + enLabel + '  ', '  ' + enDescription + '  ');
@@ -109,4 +112,4 @@ for (const attrs of [
   assert.strictEqual(f.descriptionNode.nodeValue, pairs[3][3]);
   assert.strictEqual(state.dynamicContextualTranslationsApplied, 2);
 }
-console.log('OK Phase 2D.1 General settings: scope, safety, scan, dynamic');
+console.log('OK Phase 2D.2 General settings: scope, safety, scan, dynamic');
