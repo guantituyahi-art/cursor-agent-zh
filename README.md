@@ -10,7 +10,7 @@
 
 ## 当前阶段
 
-Phase 1D.2b.1 已在 Cursor 3.21.18 人工验收：Glass 内三个 exact 文案及侧栏 Search 上下文翻译。当前正在适配 Cursor 3.22.7；Phase 2A 暂停。运行时与部署细节见 [架构](docs/architecture.md) 和 [3.22.7 升级审计](research/cursor-3.22.7-upgrade-compat.md)。
+Phase 1D.2b.1 已在 Cursor 3.21.18 人工验收：Glass 内三个 exact 文案及侧栏 Search 上下文翻译。Cursor 3.22.7 兼容适配已验收；Phase 2A 三页首轮盘点已完成，Phase 2B.1 的 Appearance 四个标签已获实机显示与控件反馈；Phase 2B.2 的同页九个新增标签已获实机确认。Console 基线仍有未判定项。运行时与部署细节见 [架构](docs/architecture.md) 和 [3.22.7 升级审计](research/cursor-3.22.7-upgrade-compat.md)。
 
 ## 版本说明
 
@@ -49,6 +49,9 @@ scripts/        部署、还原与回归测试
 - [兼容性清单](docs/compatibility.md)
 - [Cursor 3.21.18 调研](research/cursor-3.21.18.md)
 - [Cursor 3.22.7 适配记录](research/cursor-3.22.7-adaptation.md)
+- [Phase 2A Settings 盘点](research/phase-2a-settings-inventory.md)
+- [Phase 2B.1 Appearance 标签验证](research/phase-2b1-appearance-labels.md)
+- [Phase 2B.2 Appearance 标签扩展](research/phase-2b2-appearance-labels.md)
 - [既有项目深度分析](research/existing-projects.md)
 
 ## 许可

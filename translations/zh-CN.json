@@ -9,7 +9,20 @@
       "en": "Search",
       "zh": "搜索",
       "when": "sidebar-menu-button"
-    }
+    },
+    { "en": "Theme", "zh": "主题", "when": "appearance-settings-label" },
+    { "en": "Tool Call Density", "zh": "工具调用详情密度", "when": "appearance-settings-label" },
+    { "en": "Code Block Word Wrap", "zh": "代码块自动换行", "when": "appearance-settings-label" },
+    { "en": "Reduce Motion", "zh": "减少动画", "when": "appearance-settings-label" },
+    { "en": "Themed Diff Backgrounds", "zh": "差异背景跟随主题", "when": "appearance-settings-label" },
+    { "en": "Hue", "zh": "色相", "when": "appearance-settings-label" },
+    { "en": "Intensity", "zh": "强度", "when": "appearance-settings-label" },
+    { "en": "Reduce Transparency", "zh": "降低透明度", "when": "appearance-settings-label" },
+    { "en": "UI Font Size", "zh": "界面字号", "when": "appearance-settings-label" },
+    { "en": "Code Font Size", "zh": "代码字号", "when": "appearance-settings-label" },
+    { "en": "UI Font Family", "zh": "界面字体", "when": "appearance-settings-label" },
+    { "en": "Code Font Family", "zh": "代码字体", "when": "appearance-settings-label" },
+    { "en": "Follow System High Contrast", "zh": "跟随系统高对比度", "when": "appearance-settings-label" }
   ],
   "dynamic": []
 }

@@ -494,7 +494,7 @@ function loadTranslationsPack(repoRoot) {
     contextual,
     dynamic: [],
     schema: 'layered-v1',
-    runtimePhase: '1D.2b.1',
+    runtimePhase: '2B.2',
   };
 }
 

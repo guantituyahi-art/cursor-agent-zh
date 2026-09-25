@@ -1,15 +1,14 @@
 /**
- * cursor-agent-zh — Phase 1D.2b.1 Sidebar Search Contextual Translation
+ * cursor-agent-zh — Phase 2B.2 Appearance Settings Label Expansion
  *
  * SOURCE OF TRUTH for runtime logic. Deploy builds install sidecar from:
  *   translations/zh-CN.json  (dictionary SoT)
  *   runtime/bootstrap.js     (this file — logic SoT)
  * → out/vs/workbench/cursor-agent-zh-bootstrap.js
  *
- * Phase 1D.2b.1: keep 1C/1D.1/1D.2a scan + one Glass-only MutationObserver
+ * Phase 2B.2: keep 1C/1D.1/1D.2a scan + one Glass-only MutationObserver
  * (childList+subtree). Pipeline: safety → exact → contextual → nodeValue.
- * Contextual "Search" → "搜索" only when ancestor has data-sidebar-menu-button.
- * No Keep/Undo/Review/other contextual words. No attributes. No characterData.
+ * Contextual rules require a researched DOM scope. No attributes or characterData.
  * Dictionary is NEVER hard-coded here; read globalThis.__cursorAgentZhTranslations
  * injected by deploy (or tests).
  */
@@ -170,7 +169,7 @@
   }
 
   var TRANSLATIONS_GLOBAL = '__cursorAgentZhTranslations';
-  var RUNTIME_PHASE = '1D.2b.1';
+  var RUNTIME_PHASE = '2B.2';
 
   /**
    * Dictionary pack from deploy injection (or test harness). Never hard-coded.
@@ -276,6 +275,32 @@
     return false;
   }
 
+  /** Appearance setting labels only: Glass body, Appearance panel, label row. */
+  function isAppearanceSettingsLabel(node) {
+    var cur = isTextNode(node) ? node.parentNode : node;
+    var sawLabel = false;
+    var sawPanel = false;
+    var guard = 0;
+    while (cur && guard < 64) {
+      guard += 1;
+      if (isElementNode(cur)) {
+        var cls = classNameOf(cur);
+        if (!sawPanel && /(?:^|\s)ui-field-group__entry-label(?:\s|$)/.test(cls)) {
+          sawLabel = true;
+        }
+        if (getAttr(cur, 'data-component') === 'glass-settings-panel') {
+          if (!sawLabel || getAttr(cur, 'data-react-tab') !== 'appearance') return false;
+          sawPanel = true;
+        }
+        if (tagNameOf(cur) === 'BODY') {
+          return sawPanel && getAttr(cur, 'data-cursor-glass-mode') === 'true';
+        }
+      }
+      cur = cur.parentNode;
+    }
+    return false;
+  }
+
   /**
    * Resolve semantic when-id to DOM predicate. Unknown → fail closed.
    */
@@ -283,6 +308,9 @@
     if (!when || !node) return false;
     if (when === 'sidebar-menu-button') {
       return hasAncestorDataAttr(node, 'data-sidebar-menu-button');
+    }
+    if (when === 'appearance-settings-label') {
+      return isAppearanceSettingsLabel(node);
     }
     return false;
   }
@@ -765,7 +793,7 @@
       dynamicContextualTranslationsApplied: 0,
       translationObserver: null,
       mutationBatcher: null,
-      phase: '1d.2b.1-sidebar-contextual',
+      phase: '2b.2-appearance-settings-labels',
       runtimePhase: RUNTIME_PHASE,
       translates: true,
     };
@@ -895,7 +923,7 @@
     state.waitingForGlass = false;
     state.skippedNotGlass = false;
     state.runtimePhase = RUNTIME_PHASE;
-    state.phase = '1d.2b.1-sidebar-contextual';
+    state.phase = '2b.2-appearance-settings-labels';
     var stats = runSafetyScan(doc.body || doc.documentElement, doc, {
       applyExact: true,
     });
@@ -1053,7 +1081,7 @@
     }
 
     var state = emptyStatus();
-    state.phase = '1d.2b.1-sidebar-contextual';
+    state.phase = '2b.2-appearance-settings-labels';
     state.runtimePhase = RUNTIME_PHASE;
     var api = buildApi(state);
     api.__booted = true;
