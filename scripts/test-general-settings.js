@@ -55,8 +55,8 @@ const pairs = [
   ['System Tray Icon', '系统托盘图标', 'Show Cursor in system tray', '在系统托盘中显示 Cursor'],
   ['Completion Sound', '完成提示音', 'Play a sound when agents finish or need attention', '智能体完成任务或需要关注时播放提示音'],
 ];
-assert.strictEqual(runtime.RUNTIME_PHASE, '2F.1');
-assert.strictEqual(pack.contextual.length, 65);
+assert.strictEqual(runtime.RUNTIME_PHASE, '2F.2');
+assert.strictEqual(pack.contextual.length, 71);
 
 for (const [enLabel, zhLabel, enDescription, zhDescription] of pairs) {
   const f = fixture('  ' + enLabel + '  ', '  ' + enDescription + '  ');

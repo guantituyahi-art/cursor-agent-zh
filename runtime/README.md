@@ -9,7 +9,7 @@
 
 安装目录 `cursor-agent-zh-bootstrap.js` 由 `scripts/deploy-glass-loader.js` **生成**（注入 `__cursorAgentZhTranslations` + 拼接 bootstrap）。**不要**手改安装产物；**不要**在 bootstrap 内维护第二份词典。
 
-## Phase 2F.1（当前代码；Agents 五组文案已实机验收）
+## Phase 2F.2（当前代码；Agents 新增三组文案已实机验收）
 
 Exact PoC + MutationObserver（**仅**三个完整串；Glass DOM 校准）。初始扫描保留，observer 增量补充：
 

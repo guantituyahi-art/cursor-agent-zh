@@ -75,8 +75,8 @@ const translations = {
   'Override the font for code editors and diffs': '覆盖代码编辑器和差异视图使用的字体',
   'Switch to a high contrast theme when your OS is in a high contrast mode': '操作系统启用高对比度模式时，切换到高对比度主题',
 };
-assert.strictEqual(runtime.RUNTIME_PHASE, '2F.1');
-assert.strictEqual(pack.contextual.length, 65);
+assert.strictEqual(runtime.RUNTIME_PHASE, '2F.2');
+assert.strictEqual(pack.contextual.length, 71);
 
 for (const [en, zh] of Object.entries(translations)) {
   const f = fixture('  ' + en + '  ');

@@ -52,9 +52,12 @@ const pairs = [
   ['Usage Summary', '用量摘要', 'When to show the usage summary at the bottom of the chat pane', '何时在聊天面板底部显示用量摘要'],
   ['Agent Autocomplete', '智能体提示词补全', 'Contextual suggestions while prompting Agent', '编写智能体提示词时提供上下文建议'],
   ['Legacy Terminal Tool', '旧版终端工具', 'Use the legacy terminal tool in agent mode, for use on systems with unsupported shell configurations', '在智能体模式下使用旧版终端工具，适用于不受支持的 Shell 配置'],
+  ['New Messages', '新消息', 'Choose the default behavior of messages sent while Agent is working', '选择智能体工作时发送消息的默认处理方式'],
+  ['Manually Sent Messages from Queue', '从队列手动发送的消息', 'Choose the default behavior of messages sent from the queue', '选择从队列发送消息时的默认处理方式'],
+  ['Auto-Parse Links', '自动解析链接', 'Automatically parse links when pasted into Quick Edit (Ctrl+K) input', '将链接粘贴到快速编辑（Ctrl+K）输入框时自动解析'],
 ];
-assert.strictEqual(runtime.RUNTIME_PHASE, '2F.1');
-assert.strictEqual(pack.contextual.length, 65);
+assert.strictEqual(runtime.RUNTIME_PHASE, '2F.2');
+assert.strictEqual(pack.contextual.length, 71);
 for (const [enLabel, zhLabel, enDescription, zhDescription] of pairs) {
   const f = fixture('  ' + enLabel + '  ', '  ' + enDescription + '  ');
   assert.strictEqual(runtime.matchesContextualWhen('agents-settings-label', f.labelNode), true);
@@ -79,6 +82,7 @@ for (const opts of [
   assert.strictEqual(runtime.tryApplyContextualTranslation(text(pairs[0][2], f.labelBox)), null);
   assert.strictEqual(runtime.tryApplyContextualTranslation(text('Run Mode', f.labelBox)), null);
   assert.strictEqual(runtime.tryApplyContextualTranslation(text('Last Used', f.row)), null);
+  assert.strictEqual(runtime.tryApplyContextualTranslation(text('Automatically parse links when pasted into Quick Edit (⌘K) input', f.descriptionBox)), null);
 }
 for (const attrs of [
   { 'data-message-kind': 'human' }, { 'data-message-kind': 'thinking' },
@@ -110,4 +114,4 @@ for (const attrs of [
   assert.strictEqual(f.descriptionNode.nodeValue, pairs[4][3]);
   assert.strictEqual(state.dynamicContextualTranslationsApplied, 2);
 }
-console.log('OK Phase 2F.1 Agents settings: 5 rows, safety, scan, dynamic');
+console.log('OK Phase 2F.2 Agents settings: 8 rows, safety, scan, dynamic');
