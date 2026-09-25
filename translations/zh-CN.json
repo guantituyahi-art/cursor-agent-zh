@@ -22,7 +22,11 @@
     { "en": "Code Font Size", "zh": "代码字号", "when": "appearance-settings-label" },
     { "en": "UI Font Family", "zh": "界面字体", "when": "appearance-settings-label" },
     { "en": "Code Font Family", "zh": "代码字体", "when": "appearance-settings-label" },
-    { "en": "Follow System High Contrast", "zh": "跟随系统高对比度", "when": "appearance-settings-label" }
+    { "en": "Follow System High Contrast", "zh": "跟随系统高对比度", "when": "appearance-settings-label" },
+    { "en": "Choose between light, dark, or high contrast themes", "zh": "选择浅色、深色或高对比度主题", "when": "appearance-settings-description" },
+    { "en": "Adjust how much detail is shown for tool calls", "zh": "调整工具调用显示的详细程度", "when": "appearance-settings-description" },
+    { "en": "Wrap long lines in Agent conversation code blocks", "zh": "让智能体对话中的代码块长行自动换行", "when": "appearance-settings-description" },
+    { "en": "Minimize interface animations. System follows your OS preference.", "zh": "减少界面动画。设为 System 时遵循操作系统偏好。", "when": "appearance-settings-description" }
   ],
   "dynamic": []
 }

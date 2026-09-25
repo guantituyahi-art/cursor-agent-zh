@@ -1,12 +1,12 @@
 /**
- * cursor-agent-zh — Phase 2B.2 Appearance Settings Label Expansion
+ * cursor-agent-zh — Phase 2C.1 Appearance Settings Description PoC
  *
  * SOURCE OF TRUTH for runtime logic. Deploy builds install sidecar from:
  *   translations/zh-CN.json  (dictionary SoT)
  *   runtime/bootstrap.js     (this file — logic SoT)
  * → out/vs/workbench/cursor-agent-zh-bootstrap.js
  *
- * Phase 2B.2: keep 1C/1D.1/1D.2a scan + one Glass-only MutationObserver
+ * Phase 2C.1: keep 1C/1D.1/1D.2a scan + one Glass-only MutationObserver
  * (childList+subtree). Pipeline: safety → exact → contextual → nodeValue.
  * Contextual rules require a researched DOM scope. No attributes or characterData.
  * Dictionary is NEVER hard-coded here; read globalThis.__cursorAgentZhTranslations
@@ -169,7 +169,7 @@
   }
 
   var TRANSLATIONS_GLOBAL = '__cursorAgentZhTranslations';
-  var RUNTIME_PHASE = '2B.2';
+  var RUNTIME_PHASE = '2C.1';
 
   /**
    * Dictionary pack from deploy injection (or test harness). Never hard-coded.
@@ -275,21 +275,20 @@
     return false;
   }
 
-  /** Appearance setting labels only: Glass body, Appearance panel, label row. */
-  function isAppearanceSettingsLabel(node) {
+  /** Appearance setting text only: Glass body, Appearance panel, exact field class. */
+  function isAppearanceSettingsText(node, classToken) {
     var cur = isTextNode(node) ? node.parentNode : node;
-    var sawLabel = false;
+    var sawTarget = false;
     var sawPanel = false;
     var guard = 0;
     while (cur && guard < 64) {
       guard += 1;
       if (isElementNode(cur)) {
-        var cls = classNameOf(cur);
-        if (!sawPanel && /(?:^|\s)ui-field-group__entry-label(?:\s|$)/.test(cls)) {
-          sawLabel = true;
+        if (!sawPanel && classNameOf(cur).split(/\s+/).indexOf(classToken) !== -1) {
+          sawTarget = true;
         }
         if (getAttr(cur, 'data-component') === 'glass-settings-panel') {
-          if (!sawLabel || getAttr(cur, 'data-react-tab') !== 'appearance') return false;
+          if (!sawTarget || getAttr(cur, 'data-react-tab') !== 'appearance') return false;
           sawPanel = true;
         }
         if (tagNameOf(cur) === 'BODY') {
@@ -310,7 +309,10 @@
       return hasAncestorDataAttr(node, 'data-sidebar-menu-button');
     }
     if (when === 'appearance-settings-label') {
-      return isAppearanceSettingsLabel(node);
+      return isAppearanceSettingsText(node, 'ui-field-group__entry-label');
+    }
+    if (when === 'appearance-settings-description') {
+      return isAppearanceSettingsText(node, 'ui-field-group__entry-description');
     }
     return false;
   }
@@ -793,7 +795,7 @@
       dynamicContextualTranslationsApplied: 0,
       translationObserver: null,
       mutationBatcher: null,
-      phase: '2b.2-appearance-settings-labels',
+      phase: '2c.1-appearance-settings-descriptions',
       runtimePhase: RUNTIME_PHASE,
       translates: true,
     };
@@ -923,7 +925,7 @@
     state.waitingForGlass = false;
     state.skippedNotGlass = false;
     state.runtimePhase = RUNTIME_PHASE;
-    state.phase = '2b.2-appearance-settings-labels';
+    state.phase = '2c.1-appearance-settings-descriptions';
     var stats = runSafetyScan(doc.body || doc.documentElement, doc, {
       applyExact: true,
     });
@@ -1081,7 +1083,7 @@
     }
 
     var state = emptyStatus();
-    state.phase = '2b.2-appearance-settings-labels';
+    state.phase = '2c.1-appearance-settings-descriptions';
     state.runtimePhase = RUNTIME_PHASE;
     var api = buildApi(state);
     api.__booted = true;
