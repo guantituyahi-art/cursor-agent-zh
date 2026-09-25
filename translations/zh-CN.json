@@ -26,7 +26,16 @@
     { "en": "Choose between light, dark, or high contrast themes", "zh": "选择浅色、深色或高对比度主题", "when": "appearance-settings-description" },
     { "en": "Adjust how much detail is shown for tool calls", "zh": "调整工具调用显示的详细程度", "when": "appearance-settings-description" },
     { "en": "Wrap long lines in Agent conversation code blocks", "zh": "让智能体对话中的代码块长行自动换行", "when": "appearance-settings-description" },
-    { "en": "Minimize interface animations. System follows your OS preference.", "zh": "减少界面动画。设为 System 时遵循操作系统偏好。", "when": "appearance-settings-description" }
+    { "en": "Minimize interface animations. System follows your OS preference.", "zh": "减少界面动画。设为 System 时遵循操作系统偏好。", "when": "appearance-settings-description" },
+    { "en": "Use themed background colors for inline code diffs", "zh": "为行内代码差异使用与主题匹配的背景色", "when": "appearance-settings-description" },
+    { "en": "Choose a tint color", "zh": "选择界面的色调", "when": "appearance-settings-description" },
+    { "en": "Control how strongly the tint is applied", "zh": "调整色调的应用强度", "when": "appearance-settings-description" },
+    { "en": "Replace translucent surfaces with opaque backgrounds", "zh": "将半透明界面区域替换为不透明背景", "when": "appearance-settings-description" },
+    { "en": "Font size for the Cursor user interface", "zh": "Cursor 界面的字号", "when": "appearance-settings-description" },
+    { "en": "Font size for code editors and diffs", "zh": "代码编辑器和差异视图的字号", "when": "appearance-settings-description" },
+    { "en": "Override the Cursor user interface typeface", "zh": "覆盖 Cursor 界面使用的字体", "when": "appearance-settings-description" },
+    { "en": "Override the font for code editors and diffs", "zh": "覆盖代码编辑器和差异视图使用的字体", "when": "appearance-settings-description" },
+    { "en": "Switch to a high contrast theme when your OS is in a high contrast mode", "zh": "操作系统启用高对比度模式时，切换到高对比度主题", "when": "appearance-settings-description" }
   ],
   "dynamic": []
 }

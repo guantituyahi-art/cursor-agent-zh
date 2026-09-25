@@ -21,7 +21,7 @@ const POC_PACK = {
   ],
   dynamic: [],
   schema: 'layered-v1',
-  runtimePhase: '2C.1',
+  runtimePhase: '2C.2',
 };
 
 globalThis.__cursorAgentZhTranslations = POC_PACK;
@@ -205,7 +205,7 @@ test('Search is not an exact key', () => {
 // Dictionary SoT / deploy schema
 test('deploy loadTranslationsPack layered schema', () => {
   const pack = shared.loadTranslationsPack(path.join(__dirname, '..'));
-  assert.strictEqual(pack.runtimePhase, '2C.1');
+  assert.strictEqual(pack.runtimePhase, '2C.2');
   assert.strictEqual(Object.keys(pack.exact).length, 3);
   assert.deepStrictEqual(Object.keys(pack.exact).sort(), [
     'Automations',
@@ -213,7 +213,7 @@ test('deploy loadTranslationsPack layered schema', () => {
     'New Project',
   ]);
   assert.ok(Array.isArray(pack.contextual));
-  assert.strictEqual(pack.contextual.length, 18);
+  assert.strictEqual(pack.contextual.length, 27);
   assert.strictEqual(pack.contextual[0].en, 'Search');
   assert.strictEqual(pack.contextual[0].zh, '搜索');
   assert.strictEqual(pack.contextual[0].when, 'sidebar-menu-button');
@@ -228,7 +228,7 @@ test('buildSidecarSource injects pack before bootstrap', () => {
   assert.ok(built.source.includes('"New Chat":"新建聊天"'));
   assert.ok(built.source.includes('"New Project":"新建项目"'));
   assert.ok(built.source.includes('"Automations":"自动化"'));
-  assert.ok(built.source.includes('Phase 2C.1 Appearance Settings Description PoC'));
+  assert.ok(built.source.includes('Phase 2C.2 Appearance Settings Description Expansion'));
   assert.ok(built.source.includes('"en":"Search"'));
   assert.ok(built.source.includes('"zh":"搜索"'));
   assert.ok(built.source.includes('sidebar-menu-button'));
@@ -243,7 +243,7 @@ test('buildSidecarSource injects pack before bootstrap', () => {
 });
 
 test('runtimePhase constant', () => {
-  assert.strictEqual(safety.RUNTIME_PHASE, '2C.1');
+  assert.strictEqual(safety.RUNTIME_PHASE, '2C.2');
 });
 
 

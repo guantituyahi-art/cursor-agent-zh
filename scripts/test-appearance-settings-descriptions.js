@@ -65,9 +65,18 @@ const translations = {
   'Adjust how much detail is shown for tool calls': '调整工具调用显示的详细程度',
   'Wrap long lines in Agent conversation code blocks': '让智能体对话中的代码块长行自动换行',
   'Minimize interface animations. System follows your OS preference.': '减少界面动画。设为 System 时遵循操作系统偏好。',
+  'Use themed background colors for inline code diffs': '为行内代码差异使用与主题匹配的背景色',
+  'Choose a tint color': '选择界面的色调',
+  'Control how strongly the tint is applied': '调整色调的应用强度',
+  'Replace translucent surfaces with opaque backgrounds': '将半透明界面区域替换为不透明背景',
+  'Font size for the Cursor user interface': 'Cursor 界面的字号',
+  'Font size for code editors and diffs': '代码编辑器和差异视图的字号',
+  'Override the Cursor user interface typeface': '覆盖 Cursor 界面使用的字体',
+  'Override the font for code editors and diffs': '覆盖代码编辑器和差异视图使用的字体',
+  'Switch to a high contrast theme when your OS is in a high contrast mode': '操作系统启用高对比度模式时，切换到高对比度主题',
 };
-assert.strictEqual(runtime.RUNTIME_PHASE, '2C.1');
-assert.strictEqual(pack.contextual.length, 18);
+assert.strictEqual(runtime.RUNTIME_PHASE, '2C.2');
+assert.strictEqual(pack.contextual.length, 27);
 
 for (const [en, zh] of Object.entries(translations)) {
   const f = fixture('  ' + en + '  ');
@@ -124,4 +133,4 @@ for (const attrs of [
   assert.strictEqual(f.node.nodeValue, translations['Adjust how much detail is shown for tool calls']);
   assert.strictEqual(state.dynamicContextualTranslationsApplied, 1);
 }
-console.log('OK Phase 2C.1 Appearance descriptions: scope, safety, scan, dynamic');
+console.log('OK Phase 2C.2 Appearance descriptions: scope, safety, scan, dynamic');

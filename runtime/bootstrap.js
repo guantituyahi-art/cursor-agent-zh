@@ -1,12 +1,12 @@
 /**
- * cursor-agent-zh — Phase 2C.1 Appearance Settings Description PoC
+ * cursor-agent-zh — Phase 2C.2 Appearance Settings Description Expansion
  *
  * SOURCE OF TRUTH for runtime logic. Deploy builds install sidecar from:
  *   translations/zh-CN.json  (dictionary SoT)
  *   runtime/bootstrap.js     (this file — logic SoT)
  * → out/vs/workbench/cursor-agent-zh-bootstrap.js
  *
- * Phase 2C.1: keep 1C/1D.1/1D.2a scan + one Glass-only MutationObserver
+ * Phase 2C.2: keep 1C/1D.1/1D.2a scan + one Glass-only MutationObserver
  * (childList+subtree). Pipeline: safety → exact → contextual → nodeValue.
  * Contextual rules require a researched DOM scope. No attributes or characterData.
  * Dictionary is NEVER hard-coded here; read globalThis.__cursorAgentZhTranslations
@@ -169,7 +169,7 @@
   }
 
   var TRANSLATIONS_GLOBAL = '__cursorAgentZhTranslations';
-  var RUNTIME_PHASE = '2C.1';
+  var RUNTIME_PHASE = '2C.2';
 
   /**
    * Dictionary pack from deploy injection (or test harness). Never hard-coded.
@@ -795,7 +795,7 @@
       dynamicContextualTranslationsApplied: 0,
       translationObserver: null,
       mutationBatcher: null,
-      phase: '2c.1-appearance-settings-descriptions',
+      phase: '2c.2-appearance-settings-descriptions',
       runtimePhase: RUNTIME_PHASE,
       translates: true,
     };
@@ -925,7 +925,7 @@
     state.waitingForGlass = false;
     state.skippedNotGlass = false;
     state.runtimePhase = RUNTIME_PHASE;
-    state.phase = '2c.1-appearance-settings-descriptions';
+    state.phase = '2c.2-appearance-settings-descriptions';
     var stats = runSafetyScan(doc.body || doc.documentElement, doc, {
       applyExact: true,
     });
@@ -1083,7 +1083,7 @@
     }
 
     var state = emptyStatus();
-    state.phase = '2c.1-appearance-settings-descriptions';
+    state.phase = '2c.2-appearance-settings-descriptions';
     state.runtimePhase = RUNTIME_PHASE;
     var api = buildApi(state);
     api.__booted = true;
