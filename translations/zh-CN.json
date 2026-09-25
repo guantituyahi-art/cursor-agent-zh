@@ -49,7 +49,21 @@
     { "en": "System Tray Icon", "zh": "系统托盘图标", "when": "general-settings-label" },
     { "en": "Show Cursor in system tray", "zh": "在系统托盘中显示 Cursor", "when": "general-settings-description" },
     { "en": "Completion Sound", "zh": "完成提示音", "when": "general-settings-label" },
-    { "en": "Play a sound when agents finish or need attention", "zh": "智能体完成任务或需要关注时播放提示音", "when": "general-settings-description" }
+    { "en": "Play a sound when agents finish or need attention", "zh": "智能体完成任务或需要关注时播放提示音", "when": "general-settings-description" },
+    { "en": "General", "zh": "常规", "when": "settings-sidebar-label" },
+    { "en": "Profile", "zh": "个人资料", "when": "settings-sidebar-label" },
+    { "en": "Appearance", "zh": "外观", "when": "settings-sidebar-label" },
+    { "en": "Plan & Usage", "zh": "套餐与用量", "when": "settings-sidebar-label" },
+    { "en": "Agents", "zh": "智能体", "when": "settings-sidebar-label" },
+    { "en": "Cloud Agents", "zh": "云端智能体", "when": "settings-sidebar-label" },
+    { "en": "Models", "zh": "模型", "when": "settings-sidebar-label" },
+    { "en": "Git & PRs", "zh": "Git 与拉取请求", "when": "settings-sidebar-label" },
+    { "en": "Worktrees", "zh": "工作树", "when": "settings-sidebar-label" },
+    { "en": "Browser & Network", "zh": "浏览器与网络", "when": "settings-sidebar-label" },
+    { "en": "Tab", "zh": "标签页", "when": "settings-sidebar-label" },
+    { "en": "Code Intelligence", "zh": "代码智能", "when": "settings-sidebar-label" },
+    { "en": "Beta", "zh": "测试版", "when": "settings-sidebar-label" },
+    { "en": "Docs", "zh": "文档", "when": "settings-sidebar-label" }
   ],
   "dynamic": []
 }

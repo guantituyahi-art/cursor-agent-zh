@@ -1,12 +1,12 @@
 /**
- * cursor-agent-zh — Phase 2D.2 General Settings Expansion
+ * cursor-agent-zh — Phase 2E.1 Settings Sidebar Navigation
  *
  * SOURCE OF TRUTH for runtime logic. Deploy builds install sidecar from:
  *   translations/zh-CN.json  (dictionary SoT)
  *   runtime/bootstrap.js     (this file — logic SoT)
  * → out/vs/workbench/cursor-agent-zh-bootstrap.js
  *
- * Phase 2D.2: keep 1C/1D.1/1D.2a scan + one Glass-only MutationObserver
+ * Phase 2E.1: keep 1C/1D.1/1D.2a scan + one Glass-only MutationObserver
  * (childList+subtree). Pipeline: safety → exact → contextual → nodeValue.
  * Contextual rules require a researched DOM scope. No attributes or characterData.
  * Dictionary is NEVER hard-coded here; read globalThis.__cursorAgentZhTranslations
@@ -169,7 +169,7 @@
   }
 
   var TRANSLATIONS_GLOBAL = '__cursorAgentZhTranslations';
-  var RUNTIME_PHASE = '2D.2';
+  var RUNTIME_PHASE = '2E.1';
 
   /**
    * Dictionary pack from deploy injection (or test harness). Never hard-coded.
@@ -300,6 +300,31 @@
     return false;
   }
 
+  /** Settings navigation labels only; excludes Back in workspace sidebar. */
+  function isSettingsSidebarLabel(node) {
+    var cur = isTextNode(node) ? node.parentNode : node;
+    var sawLabel = false;
+    var sawSidebar = false;
+    var guard = 0;
+    while (cur && guard < 64) {
+      guard += 1;
+      if (isElementNode(cur)) {
+        if (!sawSidebar && classNameOf(cur).split(/\s+/).indexOf('ui-sidebar-menu-button-label') !== -1) {
+          sawLabel = true;
+        }
+        if (getAttr(cur, 'data-component') === 'glass-settings-sidebar') {
+          if (!sawLabel) return false;
+          sawSidebar = true;
+        }
+        if (tagNameOf(cur) === 'BODY') {
+          return sawSidebar && getAttr(cur, 'data-cursor-glass-mode') === 'true';
+        }
+      }
+      cur = cur.parentNode;
+    }
+    return false;
+  }
+
   /**
    * Resolve semantic when-id to DOM predicate. Unknown → fail closed.
    */
@@ -319,6 +344,9 @@
     }
     if (when === 'general-settings-description') {
       return isSettingsText(node, 'general', 'ui-field-group__entry-description');
+    }
+    if (when === 'settings-sidebar-label') {
+      return isSettingsSidebarLabel(node);
     }
     return false;
   }
@@ -801,7 +829,7 @@
       dynamicContextualTranslationsApplied: 0,
       translationObserver: null,
       mutationBatcher: null,
-      phase: '2d.2-general-settings',
+      phase: '2e.1-settings-sidebar',
       runtimePhase: RUNTIME_PHASE,
       translates: true,
     };
@@ -931,7 +959,7 @@
     state.waitingForGlass = false;
     state.skippedNotGlass = false;
     state.runtimePhase = RUNTIME_PHASE;
-    state.phase = '2d.2-general-settings';
+    state.phase = '2e.1-settings-sidebar';
     var stats = runSafetyScan(doc.body || doc.documentElement, doc, {
       applyExact: true,
     });
@@ -1089,7 +1117,7 @@
     }
 
     var state = emptyStatus();
-    state.phase = '2d.2-general-settings';
+    state.phase = '2e.1-settings-sidebar';
     state.runtimePhase = RUNTIME_PHASE;
     var api = buildApi(state);
     api.__booted = true;

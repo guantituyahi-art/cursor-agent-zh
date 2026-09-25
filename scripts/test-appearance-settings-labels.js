@@ -77,9 +77,9 @@ const wanted = {
   'Code Font Family': '代码字体',
   'Follow System High Contrast': '跟随系统高对比度',
 };
-assert.strictEqual(pack.runtimePhase, '2D.2');
-assert.strictEqual(runtime.RUNTIME_PHASE, '2D.2');
-assert.strictEqual(pack.contextual.length, 41);
+assert.strictEqual(pack.runtimePhase, '2E.1');
+assert.strictEqual(runtime.RUNTIME_PHASE, '2E.1');
+assert.strictEqual(pack.contextual.length, 55);
 assert.deepStrictEqual(Object.keys(pack.exact), ['New Chat', 'New Project', 'Automations']);
 
 for (const [en, zh] of Object.entries(wanted)) {
