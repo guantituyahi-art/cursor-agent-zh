@@ -246,4 +246,17 @@ test('runtimePhase constant', () => {
   assert.strictEqual(safety.RUNTIME_PHASE, '1D.2b.1');
 });
 
+
+test('3.22.7 thinking and ai message text never exact-translates', () => {
+  for (const attrs of [
+    { 'data-message-kind': 'thinking' },
+    { 'data-message-role': 'ai' },
+  ]) {
+    const box = el('div', attrs);
+    const t = text('New Chat', box);
+    assert.strictEqual(safety.tryApplyExactTranslation(t), null);
+    assert.strictEqual(t.nodeValue, 'New Chat');
+  }
+});
+
 console.log('OK ' + passed + ' exact-translation tests');

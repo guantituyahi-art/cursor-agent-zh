@@ -301,4 +301,16 @@ test('no setInterval / no attr observer / no full-body rescan helper', () => {
   assert.strictEqual(safety.RUNTIME_PHASE, '1D.2b.1');
 });
 
+
+test('3.22.7 thinking and ai dynamic text never translates', () => {
+  const state = freshState();
+  const thinking = text('New Chat', el('div', { 'data-message-kind': 'thinking' }));
+  const ai = text('New Project', el('div', { 'data-message-role': 'ai' }));
+  safety.processAddedNodes([thinking, ai], state, doc);
+  assert.strictEqual(thinking.nodeValue, 'New Chat');
+  assert.strictEqual(ai.nodeValue, 'New Project');
+  assert.strictEqual(state.dynamicTranslationsApplied, 0);
+  assert.strictEqual(state.skipCounts.message, 2);
+});
+
 console.log('OK ' + passed + ' mutation-exact tests');

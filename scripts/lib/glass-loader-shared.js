@@ -9,11 +9,15 @@ const { execFileSync } = require('child_process');
 const LOADER_MARKER = 'cursor-agent-zh-phase1a-loader';
 const LOADER_MARKER_COMMENT = `/* ${LOADER_MARKER} */`;
 
-/** Phase 1A recorded pristine SHA256 of workbench.glass.main.js (pre-inject). */
-const PRISTINE_GLASS_SHA256 =
-  'F43F8393D53FEBD5DB82DA6EECDE39BF4D1878DC5D811D557EFA91279B39B4BC';
-
-const BACKUP_SUFFIX = '.cursor-agent-zh-backup';
+/** Explicitly approved Cursor bundle baselines. Never infer pristine from a patched file. */
+const SUPPORTED_BASELINES = Object.freeze({
+  '3.22.7:37076c6c3f9e253c0fa2305197e45befd13a2260': Object.freeze({
+    version: '3.22.7',
+    commit: '37076c6c3f9e253c0fa2305197e45befd13a2260',
+    sha256: '721501D167E1EA82E51F33346C924448A34360E857B1E6D3972DC677589AA5A0',
+    bytes: 45389668,
+  }),
+});
 const SIDECAR_NAME = 'cursor-agent-zh-bootstrap.js';
 const GLASS_REL = path.join('out', 'vs', 'workbench', 'workbench.glass.main.js');
 const PRODUCT_REL = 'product.json';
@@ -23,6 +27,23 @@ function sha256File(filePath) {
   const hash = crypto.createHash('sha256');
   hash.update(fs.readFileSync(filePath));
   return hash.digest('hex').toUpperCase();
+}
+
+function sha256Text(source) {
+  return crypto.createHash('sha256').update(source, 'utf8').digest('hex').toUpperCase();
+}
+
+function cursorProcessesRunning() {
+  if (process.platform !== 'win32') {
+    const out = execFileSync('ps', ['-A', '-o', 'comm='], { encoding: 'utf8' });
+    return /\b[Cc]ursor\b/.test(out);
+  }
+  const out = execFileSync('powershell.exe', [
+    '-NoProfile',
+    '-Command',
+    "Get-CimInstance Win32_Process -Filter \"Name='Cursor.exe'\" | Select-Object -ExpandProperty ProcessId",
+  ], { encoding: 'utf8', windowsHide: true });
+  return /[0-9]/.test(out);
 }
 
 function fileContainsMarker(filePath) {
@@ -232,34 +253,6 @@ function countMarkerInString(s) {
   return count;
 }
 
-/**
- * Write glass = backup + one safe loader (never append a second loader).
- * @param {string} glassPath
- * @param {string} backupPath
- */
-function reinstallLoaderFromBackup(glassPath, backupPath) {
-  verifyExistingBackupOrThrow(backupPath);
-  const pristine = fs.readFileSync(backupPath);
-  const sha = sha256File(backupPath);
-  if (sha !== PRISTINE_GLASS_SHA256) {
-    throw new Error(
-      `reinstall: backup SHA ${sha} != pristine ${PRISTINE_GLASS_SHA256}`,
-    );
-  }
-  const { contents, placement } = composeGlassWithLoader(pristine.toString('utf8'));
-  fs.writeFileSync(glassPath, contents, { encoding: 'utf8' });
-  const after = countMarkerOccurrences(glassPath);
-  if (after !== 1) {
-    throw new Error(`reinstall: marker count=${after}, expected 1`);
-  }
-  return {
-    placement,
-    glassSha256: sha256File(glassPath),
-    backupSha256: sha,
-    markerCount: after,
-  };
-}
-
 function resolveRepoRoot(explicit) {
   if (explicit) return path.resolve(explicit);
   // scripts/lib -> scripts -> repo root
@@ -310,11 +303,82 @@ function pathsForApp(appRoot) {
   return {
     appRoot,
     product: path.join(appRoot, PRODUCT_REL),
+    packageJson: path.join(appRoot, 'package.json'),
     glass,
-    backup: glass + BACKUP_SUFFIX,
     sidecar: path.join(appRoot, 'out', 'vs', 'workbench', SIDECAR_NAME),
     desktop: path.join(appRoot, 'out', 'vs', 'workbench', 'workbench.desktop.main.js'),
   };
+}
+
+function readSupportedIdentity(p) {
+  const product = JSON.parse(fs.readFileSync(p.product, 'utf8'));
+  const pkg = JSON.parse(fs.readFileSync(p.packageJson, 'utf8'));
+  if (product.version !== pkg.version) {
+    throw new Error('STOP: product.json and package.json versions differ');
+  }
+  const baseline = SUPPORTED_BASELINES[`${product.version}:${product.commit}`];
+  if (!baseline) {
+    throw new Error(`STOP: unsupported Cursor version/commit ${product.version}/${product.commit}`);
+  }
+  return baseline;
+}
+
+function backupPathsForIdentity(identity, appRoot, localAppData) {
+  const base = localAppData || process.env.LOCALAPPDATA;
+  if (!base) throw new Error('STOP: LOCALAPPDATA is required for external backups');
+  const backupRoot = path.resolve(base, 'cursor-agent-zh', 'backups');
+  const app = path.resolve(appRoot);
+  const rel = path.relative(app, backupRoot);
+  if (rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel))) {
+    throw new Error('STOP: backup root must be outside Cursor installation');
+  }
+  const dir = path.join(backupRoot, identity.version, identity.commit);
+  return {
+    dir,
+    backup: path.join(dir, 'workbench.glass.main.js'),
+    manifest: path.join(dir, 'manifest.json'),
+  };
+}
+
+function verifyVersionedBackupOrThrow(paths, identity) {
+  const hasBackup = fs.existsSync(paths.backup);
+  const hasManifest = fs.existsSync(paths.manifest);
+  if (!hasBackup && !hasManifest) return { action: 'missing' };
+  if (!hasBackup || !hasManifest) {
+    throw new Error('STOP: incomplete external backup; refusing to overwrite it');
+  }
+  let manifest;
+  try { manifest = JSON.parse(fs.readFileSync(paths.manifest, 'utf8')); }
+  catch (_) { throw new Error('STOP: invalid backup manifest'); }
+  if (manifest.version !== identity.version || manifest.commit !== identity.commit ||
+      manifest.originalSha256 !== identity.sha256 || manifest.bytes !== identity.bytes) {
+    throw new Error('STOP: backup manifest does not match Cursor version/commit baseline');
+  }
+  const result = verifyExistingBackupOrThrow(paths.backup, identity.sha256);
+  if (fs.statSync(paths.backup).size !== identity.bytes) {
+    throw new Error('STOP: backup size differs from recorded pristine');
+  }
+  return result;
+}
+
+function createVersionedBackupOrThrow(glassPath, paths, identity) {
+  const existing = verifyVersionedBackupOrThrow(paths, identity);
+  if (existing.action === 'reuse') return existing;
+  if (fileContainsMarker(glassPath) || sha256File(glassPath) !== identity.sha256 ||
+      fs.statSync(glassPath).size !== identity.bytes) {
+    throw new Error('STOP: current Glass is not the recorded pristine bundle');
+  }
+  fs.mkdirSync(paths.dir, { recursive: true });
+  fs.copyFileSync(glassPath, paths.backup, fs.constants.COPYFILE_EXCL);
+  verifyExistingBackupOrThrow(paths.backup, identity.sha256);
+  fs.writeFileSync(paths.manifest, JSON.stringify({
+    version: identity.version,
+    commit: identity.commit,
+    originalSha256: identity.sha256,
+    bytes: identity.bytes,
+    createdAt: new Date().toISOString(),
+  }, null, 2) + '\n', { encoding: 'utf8', flag: 'wx' });
+  return verifyVersionedBackupOrThrow(paths, identity);
 }
 
 function assertGlassNotChecksummed(productPath) {
@@ -338,18 +402,15 @@ function assertGlassNotChecksummed(productPath) {
   return { keys, glassKeys };
 }
 
-function verifyExistingBackupOrThrow(backupPath) {
+function verifyExistingBackupOrThrow(backupPath, expectedSha) {
+  if (!expectedSha) throw new Error('STOP: expected backup SHA is required');
   if (!fs.existsSync(backupPath)) return { action: 'missing' };
   if (fileContainsMarker(backupPath)) {
-    throw new Error(
-      `STOP: existing backup contains loader marker. Refusing to overwrite or continue: ${backupPath}`,
-    );
+    throw new Error(`STOP: existing backup contains loader marker: ${backupPath}`);
   }
   const sha = sha256File(backupPath);
-  if (sha !== PRISTINE_GLASS_SHA256) {
-    throw new Error(
-      `STOP: existing backup SHA256 ${sha} != recorded pristine ${PRISTINE_GLASS_SHA256}. Refusing to overwrite backup.`,
-    );
+  if (sha !== expectedSha) {
+    throw new Error(`STOP: existing backup SHA256 ${sha} != recorded pristine ${expectedSha}`);
   }
   return { action: 'reuse', sha };
 }
@@ -471,20 +532,17 @@ function deploySidecar(repoRoot, sidecarPath) {
 }
 
 function parseArgs(argv) {
-  const out = {
-    app: null,
-    repo: null,
-    reinstallLoader: false,
-    clearCodeCache: false,
-    _: [],
-  };
+  const out = { app: null, repo: null, reinstallLoader: false, clearCodeCache: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === '--app') out.app = argv[++i];
-    else if (a === '--repo') out.repo = argv[++i];
-    else if (a === '--reinstall-loader') out.reinstallLoader = true;
+    if (a === '--app' || a === '--repo') {
+      const value = argv[++i];
+      if (!value || value.startsWith('--')) throw new Error('STOP: missing value for ' + a);
+      if (a === '--app') out.app = value;
+      else out.repo = value;
+    } else if (a === '--reinstall-loader') out.reinstallLoader = true;
     else if (a === '--clear-code-cache') out.clearCodeCache = true;
-    else out._.push(a);
+    else throw new Error('STOP: unknown argument ' + a);
   }
   return out;
 }
@@ -533,11 +591,12 @@ function clearCursorJsCodeCache(productPath, opts) {
 module.exports = {
   LOADER_MARKER,
   LOADER_MARKER_COMMENT,
-  PRISTINE_GLASS_SHA256,
-  BACKUP_SUFFIX,
+  SUPPORTED_BASELINES,
   SIDECAR_NAME,
   RUNTIME_GUARD,
   sha256File,
+  sha256Text,
+  cursorProcessesRunning,
   fileContainsMarker,
   countMarkerOccurrences,
   buildLoaderSource,
@@ -545,11 +604,14 @@ module.exports = {
   composeGlassWithLoader,
   assertLoaderNotInLineComment,
   countMarkerInString,
-  reinstallLoaderFromBackup,
   clearCursorJsCodeCache,
   resolveRepoRoot,
   resolveAppRoot,
   pathsForApp,
+  readSupportedIdentity,
+  backupPathsForIdentity,
+  verifyVersionedBackupOrThrow,
+  createVersionedBackupOrThrow,
   assertGlassNotChecksummed,
   verifyExistingBackupOrThrow,
   PHASE_1D1_EXACT_KEYS,

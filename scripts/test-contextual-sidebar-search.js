@@ -333,4 +333,18 @@ test('getContextualRules returns Search rule', () => {
   assert.strictEqual(rules[0].when, 'sidebar-menu-button');
 });
 
+
+test('3.22.7 thinking and ai skip Search even inside sidebar anchor', () => {
+  for (const attrs of [
+    { 'data-message-kind': 'thinking' },
+    { 'data-message-role': 'ai' },
+  ]) {
+    const box = el('div', attrs);
+    const btn = el('button', { 'data-sidebar-menu-button': '' }, box);
+    const t = text('Search', btn);
+    assert.strictEqual(safety.tryApplyContextualTranslation(t), null);
+    assert.strictEqual(t.nodeValue, 'Search');
+  }
+});
+
 console.log('OK ' + passed + ' contextual-sidebar-search tests');

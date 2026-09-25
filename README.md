@@ -10,24 +10,11 @@
 
 ## 当前阶段
 
-### Phase 0（已完成）
-
-- ✅ 仓库脚手架、词典雏形、用户消息 CSS、研究文档、架构与兼容清单
-- ❌ **尚未实现**运行时翻译器
-- ❌ **尚未提供**可执行的备份/注入脚本
-- ❌ 不修改你本机的 Cursor 安装文件（请勿手工乱改）
-
-### Phase 1（下一步）
-
-1. **注入加载研究**（如何在每次 Glass 启动时可靠加载我们的 JS；候选见架构 §D，先调研不急着定案）
-2. **PoC 文案门禁**：New Chat / New Project / Automations（1D.1 校准；其它种子 deferred）（须过架构 §E 全部条件）
-3. 仅在 PoC 通过后，才考虑更大范围（如 Settings）本地化
-
-硬安全边界（消息正文 / 代码 / 终端 / 路径 / 协议字段等永不翻译）与 Phase 1 门禁详见 [`docs/architecture.md`](docs/architecture.md)。
+Phase 1D.2b.1 已在 Cursor 3.21.18 人工验收：Glass 内三个 exact 文案及侧栏 Search 上下文翻译。当前正在适配 Cursor 3.22.7；Phase 2A 暂停。运行时与部署细节见 [架构](docs/architecture.md) 和 [3.22.7 升级审计](research/cursor-3.22.7-upgrade-compat.md)。
 
 ## 版本说明
 
-- 主要实验版本：**Cursor 3.21.18**
+- 已验收基线：**Cursor 3.21.18**；当前适配目标：**3.22.7**
 - **不承诺**跨版本兼容；升级后须按 `docs/compatibility.md` 重新检查
 
 ## 重要限制
@@ -50,10 +37,10 @@
 ```text
 docs/           架构与兼容性说明
 research/       版本调研与既有项目分析
-runtime/        运行时翻译器占位（未实现）
-translations/   简体中文词典雏形（当前扁平种子；目标分层见架构 §C）
+runtime/        Glass 运行时翻译器
+translations/   exact / contextual / dynamic 分层词典
 styles/         Agent Window 样式（用户消息）
-scripts/        备份/检查/注入脚本占位（未实现）
+scripts/        部署、还原与回归测试
 ```
 
 ## 文档入口
@@ -61,6 +48,7 @@ scripts/        备份/检查/注入脚本占位（未实现）
 - [初步架构](docs/architecture.md)（Invariants · Checksum 原则 · 词典分层 · Phase 1 注入研究与 PoC 门禁）
 - [兼容性清单](docs/compatibility.md)
 - [Cursor 3.21.18 调研](research/cursor-3.21.18.md)
+- [Cursor 3.22.7 适配记录](research/cursor-3.22.7-adaptation.md)
 - [既有项目深度分析](research/existing-projects.md)
 
 ## 许可

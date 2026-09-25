@@ -1,12 +1,12 @@
 # 初步架构（Phase 0）
 
-> 状态：**Phase 1D.1 Exact PoC**（仅 3 条静态 exact；无 MutationObserver）。  
-> Phase 0–1C 见既有 research；**1D.1** 见 `research/phase-1d1-exact-translation.md`。词典为分层 `translations/zh-CN.json`；sidecar 由 bootstrap + JSON 生成。
+> 当前代码：**Phase 1D.2b.1**（三个 exact + 侧栏 Search contextual；一个 Glass `childList` MutationObserver）。3.21.18 已验收；3.22.7 兼容适配进行中。
+> 本文后续 Phase 0/1A 规划段落保留历史背景；以 `runtime/bootstrap.js`、`scripts/` 和 `research/cursor-3.22.7-upgrade-compat.md` 判断当前实现。
 
 ## 目标
 
 为 Cursor **独立 Agent Window（Glass Workbench）** 提供轻量简体中文界面文案与少量 UI 样式增强。  
-锚定实验版本：**Cursor 3.21.18**。  
+旧版验收基线：**Cursor 3.21.18**；当前适配目标：**3.22.7**。
 不宣称「完整汉化」，不承诺跨版本兼容。
 
 ## 设计原则
@@ -23,7 +23,7 @@
 10. **Checksum 策略：优先不改被校验文件**；不以「同步/改写 product.json checksum 掩盖改动」为默认方案（见 §B）。
 11. **Cursor 更新后先做兼容检查**，再考虑注入。
 12. **必须支持备份与还原**。
-13. **明确：当前未实现运行时翻译器。**
+13. **当前已有受限的 Glass 运行时翻译器；扩大词条前仍须通过 §A 安全边界。**
 
 ---
 

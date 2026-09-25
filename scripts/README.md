@@ -1,39 +1,25 @@
 # scripts/
 
-## Phase 1B.1 — Glass loader deploy / restore
+## Cursor 3.22.7 部署与还原
 
-| 脚本 | 用途 |
-| --- | --- |
-| `deploy-glass-loader.js` | 幂等部署 Glass EOF loader + 从 SoT 复制 sidecar |
-| `restore-glass-loader.js` | 用已验证原始 backup 恢复 glass，并删除 sidecar |
-| `lib/glass-loader-shared.js` | 共享常量与检查（marker、checksum 门禁、备份规则） |
-| `test-exact-translation.js` | Phase 1D.1 exact A–M + SoT 注入 |
-| `test-runtime-safety.js` | Phase 1C：`shouldSkipNode` 等纯函数分类测试（无 jsdom） |
+当前只支持 Cursor 3.22.7、commit 37076c6c3f9e253c0fa2305197e45befd13a2260，以及原始 Glass SHA256 721501D167E1EA82E51F33346C924448A34360E857B1E6D3972DC677589AA5A0。其它版本或哈希在写入安装目录前停止。
 
-### Source of Truth（双源 → 生成 sidecar）
+运行前须完全退出 Cursor。部署只改 Glass bundle 与由仓库生成的 sidecar；不会改 product.json 或普通编辑器 bundle。
 
-- Runtime 逻辑：`runtime/bootstrap.js`
-- 词典：`translations/zh-CN.json`（分层 schema）
-- 安装目录 `cursor-agent-zh-bootstrap.js`：**生成产物**（注入翻译包 + 拼接 bootstrap；非手写）
+    node scripts/deploy-glass-loader.js --app D:/下载应用/cursor/resources/app --repo D:/CodexProjects/cursor-agent-zh
+    node scripts/restore-glass-loader.js --app D:/下载应用/cursor/resources/app
 
-### 用法
+首次部署会在安装目录外创建原始备份及 manifest：%LOCALAPPDATA%/cursor-agent-zh/backups/<version>/<commit>/。manifest 记录 version、commit、原始 SHA256、字节数和创建时间。已存在的备份只校验、不覆盖；还原必须使用同版本同 commit 的有效备份，并拒绝未知改动的 Glass 文件。
 
-在能访问 Cursor 安装目录的机器上：
+部署在写入 sidecar 前检查版本与 commit、package/product 版本一致性、checksum 列表、Glass 原始哈希或已知 loader 产物，以及备份完整性。sidecar 由 runtime/bootstrap.js 和 translations/zh-CN.json 生成。--reinstall-loader 从已验证备份重新组合 loader；--clear-code-cache 会在部署后清除当前 commit 的 V8 JS 缓存，仅在出现旧缓存问题且 Cursor 已退出时使用。
 
-```bash
-# 可选：显式指定 resources/app
-export CURSOR_APP="D:/下载应用/cursor/resources/app"
+## 测试
 
-node scripts/deploy-glass-loader.js --repo /path/to/cursor-agent-zh
-node scripts/restore-glass-loader.js --repo /path/to/cursor-agent-zh
-```
+    node scripts/test-runtime-safety.js
+    node scripts/test-exact-translation.js
+    node scripts/test-mutation-exact.js
+    node scripts/test-contextual-sidebar-search.js
+    node scripts/test-loader-placement.js
+    node scripts/test-versioned-backup.js
 
-`--app` / 环境变量 `CURSOR_APP` 指向 `resources/app`。未指定时尝试解析 PATH 上的 `cursor`。
-
-### 硬约束
-
-- glass 若出现在 `product.json.checksums` → **立即停止**，不改任何文件，不改 checksum。
-- 已存在 `workbench.glass.main.js.cursor-agent-zh-backup` 时：**绝不覆盖**；须无 marker 且 SHA256 等于 Phase 1A 原始记录。
-- 不修改 `workbench.desktop.main.js`、`product.json`。
-
-详见 `research/phase-1b1-deploy.md`。
+版本化备份测试只在自有临时目录内创建 fixture 并在结束后清理。仓库测试不能替代 3.22.7 的真实 DOM 与 Agents Window 验收。

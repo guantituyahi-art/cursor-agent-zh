@@ -1,11 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-/**
- * Phase 1B.1 — restore Glass bundle from verified pristine backup; remove sidecar.
- * Does not touch product.json or desktop bundle.
- */
-
+/** Restore only the matching Cursor build from its verified external backup. */
 const fs = require('fs');
 const shared = require('./lib/glass-loader-shared');
 
@@ -13,59 +9,51 @@ function main() {
   const args = shared.parseArgs(process.argv.slice(2));
   const appRoot = shared.resolveAppRoot(args.app);
   const p = shared.pathsForApp(appRoot);
-
-  console.log(`[restore] app=${appRoot}`);
-
-  if (!fs.existsSync(p.backup)) {
-    throw new Error(`Missing backup: ${p.backup}`);
+  for (const req of [p.product, p.packageJson, p.glass]) {
+    if (!fs.existsSync(req)) throw new Error('STOP: missing required file: ' + req);
+  }
+  shared.assertGlassNotChecksummed(p.product);
+  const identity = shared.readSupportedIdentity(p);
+  const backups = shared.backupPathsForIdentity(identity, appRoot);
+  const backupCheck = shared.verifyVersionedBackupOrThrow(backups, identity);
+  if (backupCheck.action !== 'reuse') {
+    throw new Error('STOP: matching external backup is missing');
   }
 
-  const check = shared.verifyExistingBackupOrThrow(p.backup);
-  if (check.action !== 'reuse') {
-    throw new Error('Backup verification failed');
+  const currentSha = shared.sha256File(p.glass);
+  const markers = shared.countMarkerOccurrences(p.glass);
+  const pristine = fs.readFileSync(backups.backup, 'utf8');
+  const expectedPatchedSha = shared.sha256Text(shared.composeGlassWithLoader(pristine).contents);
+  if (currentSha !== identity.sha256 &&
+      !(markers === 1 && currentSha === expectedPatchedSha)) {
+    throw new Error('STOP: current Glass is neither pristine nor our expected loader');
   }
-  console.log(`[restore] backup verified sha256=${check.sha}`);
+  if (shared.cursorProcessesRunning()) {
+    throw new Error('STOP: fully quit Cursor before restoring Glass');
+  }
 
   const productShaBefore = shared.sha256File(p.product);
-  const desktopShaBefore = fs.existsSync(p.desktop)
-    ? shared.sha256File(p.desktop)
-    : null;
-
-  fs.copyFileSync(p.backup, p.glass);
-  const glassSha = shared.sha256File(p.glass);
-  console.log(`[restore] glass restored sha256=${glassSha}`);
-
-  if (glassSha !== shared.PRISTINE_GLASS_SHA256) {
-    throw new Error(
-      `STOP: restored glass SHA ${glassSha} != pristine ${shared.PRISTINE_GLASS_SHA256}`,
-    );
+  const desktopShaBefore = fs.existsSync(p.desktop) ? shared.sha256File(p.desktop) : null;
+  if (currentSha !== identity.sha256) {
+    fs.copyFileSync(backups.backup, p.glass);
   }
-  if (shared.fileContainsMarker(p.glass)) {
-    throw new Error('STOP: restored glass still contains loader marker');
+  if (shared.sha256File(p.glass) !== identity.sha256 ||
+      shared.fileContainsMarker(p.glass)) {
+    throw new Error('STOP: restored Glass differs from recorded pristine');
   }
-
-  if (fs.existsSync(p.sidecar)) {
-    fs.unlinkSync(p.sidecar);
-    console.log(`[restore] removed sidecar ${p.sidecar}`);
-  } else {
-    console.log('[restore] sidecar already absent');
+  if (fs.existsSync(p.sidecar)) fs.unlinkSync(p.sidecar);
+  if (shared.sha256File(p.product) !== productShaBefore ||
+      (desktopShaBefore && shared.sha256File(p.desktop) !== desktopShaBefore)) {
+    throw new Error('STOP: protected Cursor files changed during restore');
   }
-
-  if (shared.sha256File(p.product) !== productShaBefore) {
-    throw new Error('STOP: product.json changed during restore');
-  }
-  if (desktopShaBefore && shared.sha256File(p.desktop) !== desktopShaBefore) {
-    throw new Error('STOP: desktop bundle changed during restore');
-  }
-
-  console.log('[restore] product.json unchanged');
-  if (desktopShaBefore) console.log('[restore] desktop bundle unchanged');
-  console.log('[restore] done');
+  console.log('[restore] Cursor ' + identity.version + '/' + identity.commit);
+  console.log('[restore] verified backup=' + backups.backup);
+  console.log('[restore] Glass restored sha256=' + identity.sha256 + '; sidecar absent');
 }
 
 try {
   main();
 } catch (e) {
-  console.error(`[restore] FAILED: ${e.message}`);
+  console.error('[restore] FAILED: ' + e.message);
   process.exit(1);
 }

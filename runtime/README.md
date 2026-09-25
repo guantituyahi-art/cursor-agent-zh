@@ -9,7 +9,7 @@
 
 安装目录 `cursor-agent-zh-bootstrap.js` 由 `scripts/deploy-glass-loader.js` **生成**（注入 `__cursorAgentZhTranslations` + 拼接 bootstrap）。**不要**手改安装产物；**不要**在 bootstrap 内维护第二份词典。
 
-## Phase 1D.2a（当前）
+## Phase 1D.2b.1（当前代码；3.22.7 适配中）
 
 Exact PoC + MutationObserver（**仅**三个完整串；Glass DOM 校准）。初始扫描保留，observer 增量补充：
 
@@ -17,7 +17,7 @@ Exact PoC + MutationObserver（**仅**三个完整串；Glass DOM 校准）。�
 - `New Project` → `新建项目`
 - `Automations` → `自动化`
 
-管线：Glass → `shouldSkipNode` → exact full-string → `nodeValue`。无 MutationObserver（见 1D.2）。
+管线：Glass → `shouldSkipNode` → exact full-string → sidebar contextual → `nodeValue`。初始扫描后，一个 `childList` MutationObserver 处理新增节点；`thinking` kind 与 `ai` role 也属于消息排除范围。
 
 测试：
 
@@ -29,4 +29,4 @@ Exact PoC + MutationObserver（**仅**三个完整串；Glass DOM 校准）。�
 
 ## 尚未实现
 
-characterData observer / contextual / dynamic / Settings / deferred 种子（原 New Agent / Show Chat History / Review changes / Keep / Undo / …）。1D.2b 未开始。
+characterData observer / dynamic / Settings / 其它 contextual 和 deferred 种子（原 New Agent / Show Chat History / Review changes / Keep / Undo / …）。

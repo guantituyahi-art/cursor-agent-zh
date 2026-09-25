@@ -19,8 +19,9 @@
   var LOG_PREFIX = '[cursor-agent-zh]';
   var RUNTIME_GUARD = '__cursorAgentZhRuntime';
 
-  /** Message kind/role attribute values that mark chat bodies (never translate). */
-  var MESSAGE_KINDS = { human: 1, assistant: 1, tool: 1 };
+  /** Message attributes that mark chat bodies (never translate). */
+  var MESSAGE_KINDS = { human: 1, assistant: 1, thinking: 1, tool: 1 };
+  var MESSAGE_ROLES = { human: 1, ai: 1, assistant: 1, tool: 1 };
 
   /**
    * Element selectors / tags that permanently exclude a node and descendants
@@ -90,14 +91,14 @@
   }
 
   /**
-   * True if element itself is a message-body container (human/assistant/tool).
+   * True if element itself marks a message body, including thinking and ai role.
    */
   function isMessageContainer(el) {
     if (!isElementNode(el)) return false;
     var kind = getAttr(el, 'data-message-kind');
     if (kind && MESSAGE_KINDS[kind]) return true;
     var role = getAttr(el, 'data-message-role');
-    if (role && MESSAGE_KINDS[role]) return true;
+    if (role && MESSAGE_ROLES[role]) return true;
     return false;
   }
 
@@ -1136,6 +1137,7 @@
   // Node / test exports (no auto-init when required from Node)
   var exported = {
     MESSAGE_KINDS: MESSAGE_KINDS,
+    MESSAGE_ROLES: MESSAGE_ROLES,
     CODE_CLASS_SUBSTRINGS: CODE_CLASS_SUBSTRINGS.slice(),
     GLASS_WAIT_MS: GLASS_WAIT_MS,
     GLASS_ATTR: GLASS_ATTR,

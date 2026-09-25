@@ -274,4 +274,19 @@ test('timeout without Glass attr settles skippedNotGlass once', function () {
   clearRuntimeGuard();
 });
 
+
+test('3.22.7 thinking kind is excluded without an assistant ancestor', () => {
+  const box = el('div', { 'data-message-kind': 'thinking' });
+  const t = text('New Chat', box);
+  assert.strictEqual(safety.skipReasonForNode(t), 'message');
+  assert.strictEqual(safety.isCandidateTextNode(t), false);
+});
+
+test('3.22.7 ai role is excluded without an assistant ancestor', () => {
+  const box = el('div', { 'data-message-role': 'ai' });
+  const t = text('Search', box);
+  assert.strictEqual(safety.skipReasonForNode(t), 'message');
+  assert.strictEqual(safety.isCandidateTextNode(t), false);
+});
+
 console.log('OK ' + passed + ' tests');

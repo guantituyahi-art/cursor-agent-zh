@@ -2,50 +2,11 @@
 'use strict';
 
 /**
- * Phase 1B.1 — idempotent Glass loader deploy.
- * Dual SoT → generated install sidecar:
- *   runtime/bootstrap.js + translations/zh-CN.json
- * Does not touch desktop / product.json checksums. Phase 1D.1 exact only.
- *
- * Flags:
- *   --reinstall-loader  Restore glass from pristine backup + write one safe loader
- *                       (never append a second loader onto an old injection).
- *   --clear-code-cache  Delete Cursor CachedData chrome/js for this product commit
- *                       (Cursor must not be running).
+ * Deploy the Glass-only loader for an explicitly supported Cursor build.
+ * All identity, checksum, bundle, and backup checks happen before install writes.
  */
-
 const fs = require('fs');
-const path = require('path');
 const shared = require('./lib/glass-loader-shared');
-
-function cursorProcessesRunning() {
-  if (process.platform !== 'win32') {
-    try {
-      const { execFileSync } = require('child_process');
-      const out = execFileSync('ps', ['-A', '-o', 'comm='], {
-        encoding: 'utf8',
-      });
-      return /\b[Cc]ursor\b/.test(out);
-    } catch (_) {
-      return false;
-    }
-  }
-  try {
-    const { execFileSync } = require('child_process');
-    const out = execFileSync(
-      'powershell.exe',
-      [
-        '-NoProfile',
-        '-Command',
-        "Get-CimInstance Win32_Process -Filter \"Name='Cursor.exe'\" | Select-Object -ExpandProperty ProcessId",
-      ],
-      { encoding: 'utf8', windowsHide: true },
-    );
-    return /[0-9]/.test(out);
-  } catch (_) {
-    return false;
-  }
-}
 
 function main() {
   const args = shared.parseArgs(process.argv.slice(2));
@@ -53,126 +14,83 @@ function main() {
   const appRoot = shared.resolveAppRoot(args.app);
   const p = shared.pathsForApp(appRoot);
 
-  console.log(`[deploy] repo=${repoRoot}`);
-  console.log(`[deploy] app=${appRoot}`);
+  for (const req of [p.product, p.packageJson, p.glass]) {
+    if (!fs.existsSync(req)) throw new Error('STOP: missing required file: ' + req);
+  }
+  shared.assertGlassNotChecksummed(p.product);
+  const identity = shared.readSupportedIdentity(p);
+  const backups = shared.backupPathsForIdentity(identity, appRoot);
+  const productShaBefore = shared.sha256File(p.product);
+  const desktopShaBefore = fs.existsSync(p.desktop) ? shared.sha256File(p.desktop) : null;
+  const glassShaBefore = shared.sha256File(p.glass);
+  const glassBytes = fs.statSync(p.glass).size;
+  const markerCount = shared.countMarkerOccurrences(p.glass);
+  const backupCheck = shared.verifyVersionedBackupOrThrow(backups, identity);
 
-  for (const req of [p.product, p.glass]) {
-    if (!fs.existsSync(req)) {
-      throw new Error(`Missing required file: ${req}`);
+  let expectedPatched = null;
+  let placement = null;
+  if (markerCount > 0) {
+    if (markerCount !== 1 || backupCheck.action !== 'reuse') {
+      throw new Error('STOP: marked Glass requires exactly one loader and a verified external backup');
     }
+    const pristine = fs.readFileSync(backups.backup, 'utf8');
+    const composed = shared.composeGlassWithLoader(pristine);
+    expectedPatched = composed.contents;
+    placement = composed.placement;
+    if (glassShaBefore !== shared.sha256Text(expectedPatched)) {
+      throw new Error('STOP: installed Glass differs from the expected loader composition');
+    }
+  } else if (glassShaBefore !== identity.sha256 || glassBytes !== identity.bytes) {
+    throw new Error('STOP: Glass SHA/size differs from the supported pristine baseline');
   }
 
-  const checksum = shared.assertGlassNotChecksummed(p.product);
-  console.log(
-    `[deploy] checksum keys=${checksum.keys.length}; glass keys=0 (ok)`,
-  );
+  // Build sidecar in memory so a bad dictionary or runtime cannot leave install changes.
+  const built = shared.buildSidecarSource(repoRoot);
+  if (shared.cursorProcessesRunning()) {
+    throw new Error('STOP: fully quit Cursor before deploying or clearing its code cache');
+  }
 
-  const productShaBefore = shared.sha256File(p.product);
-  const desktopShaBefore = fs.existsSync(p.desktop)
-    ? shared.sha256File(p.desktop)
-    : null;
+  // The backup is external and versioned. Never derive it from a marked Glass bundle.
+  if (backupCheck.action === 'missing') {
+    shared.createVersionedBackupOrThrow(p.glass, backups, identity);
+  }
+  shared.verifyVersionedBackupOrThrow(backups, identity);
 
-  // Always refresh sidecar from dual SoT (bootstrap + translations JSON).
-  const side = shared.deploySidecar(repoRoot, p.sidecar);
-  console.log(`[deploy] sidecar built from runtime=${side.src}`);
-  console.log(`[deploy] translations=${side.translationsSrc}`);
-  console.log(`[deploy] runtimePhase=${side.runtimePhase} exactKeys=${side.exactKeyCount}`);
-  console.log(`[deploy] sidecar sha256=${side.sha256}`);
+  if (expectedPatched === null) {
+    const pristine = fs.readFileSync(backups.backup, 'utf8');
+    const composed = shared.composeGlassWithLoader(pristine);
+    expectedPatched = composed.contents;
+    placement = composed.placement;
+  }
 
-  const hasMarker = shared.fileContainsMarker(p.glass);
-
-  if (args.reinstallLoader) {
-    console.log('[deploy] --reinstall-loader: rebuild glass from backup + one loader');
-    if (!fs.existsSync(p.backup)) {
-      throw new Error(
-        'STOP: --reinstall-loader requires an existing verified backup',
-      );
-    }
-    const result = shared.reinstallLoaderFromBackup(p.glass, p.backup);
-    console.log(`[deploy] placement=${result.placement}`);
-    console.log(`[deploy] glass sha256=${result.glassSha256}`);
-    console.log(`[deploy] backup sha256=${result.backupSha256} (unchanged)`);
-    console.log(`loader installed`);
-    console.log(`sidecar deployed`);
-  } else if (hasMarker) {
-    const n = shared.countMarkerOccurrences(p.glass);
-    console.log(`loader already installed (marker count=${n})`);
-    console.log('sidecar refreshed from source of truth');
-    if (n !== 1) {
-      console.warn(
-        `[deploy] WARN: expected marker count 1, found ${n}. Not appending; use --reinstall-loader.`,
-      );
-    }
-  } else {
-    const backupCheck = shared.verifyExistingBackupOrThrow(p.backup);
-    if (backupCheck.action === 'missing') {
-      console.log(`[deploy] creating pristine backup → ${p.backup}`);
-      fs.copyFileSync(p.glass, p.backup);
-      const sha = shared.sha256File(p.backup);
-      if (shared.fileContainsMarker(p.backup)) {
-        throw new Error('STOP: freshly copied backup unexpectedly contains marker');
-      }
-      if (sha !== shared.PRISTINE_GLASS_SHA256) {
-        fs.unlinkSync(p.backup);
-        throw new Error(
-          `STOP: new backup SHA ${sha} != recorded pristine ${shared.PRISTINE_GLASS_SHA256}. ` +
-            `Refusing to treat this glass as the Phase 1A baseline. Backup not kept.`,
-        );
-      }
-      console.log(`[deploy] backup ok sha256=${sha}`);
-    } else {
-      console.log(
-        `[deploy] reusing existing verified backup sha256=${backupCheck.sha}`,
-      );
-    }
-
-    const pristine = fs.readFileSync(p.backup, 'utf8');
-    const { contents, placement } = shared.composeGlassWithLoader(pristine);
-    fs.writeFileSync(p.glass, contents, { encoding: 'utf8' });
-    const after = shared.countMarkerOccurrences(p.glass);
-    if (after !== 1) {
-      throw new Error(
-        `STOP: after compose marker count=${after}, expected 1. Manual inspect required.`,
-      );
-    }
-    console.log(`[deploy] placement=${placement}`);
-    console.log('loader installed');
-    console.log('sidecar deployed');
-    console.log(`[deploy] glass sha256=${shared.sha256File(p.glass)}`);
+  // Sidecar first: a Glass loader must never be installed without its runtime file.
+  fs.writeFileSync(p.sidecar, built.source, 'utf8');
+  if (markerCount === 0 || args.reinstallLoader) {
+    fs.writeFileSync(p.glass, expectedPatched, 'utf8');
+  }
+  if (shared.sha256File(p.glass) !== shared.sha256Text(expectedPatched) ||
+      shared.countMarkerOccurrences(p.glass) !== 1) {
+    throw new Error('STOP: installed Glass failed loader verification');
   }
 
   if (args.clearCodeCache) {
-    if (cursorProcessesRunning()) {
-      throw new Error(
-        'STOP: --clear-code-cache refused while Cursor.exe appears to be running. ' +
-          'Fully quit Cursor, then re-run with --clear-code-cache.',
-      );
-    }
     const cleared = shared.clearCursorJsCodeCache(p.product);
-    console.log(
-      `[deploy] cleared CachedData chrome/js commit=${cleared.commit} removed=${cleared.removed} dir=${cleared.jsDir}`,
-    );
-  } else {
-    console.log(
-      '[deploy] NOTE: if Agents Window still shows __cursorAgentZhLoader === undefined, ' +
-        'fully quit Cursor and re-run with --clear-code-cache (stale vscode-file V8 CachedData).',
-    );
+    console.log('[deploy] code cache removed=' + cleared.removed + ' commit=' + cleared.commit);
   }
-
-  const productShaAfter = shared.sha256File(p.product);
-  if (productShaAfter !== productShaBefore) {
-    throw new Error('STOP: product.json changed unexpectedly during deploy');
+  if (shared.sha256File(p.product) !== productShaBefore ||
+      (desktopShaBefore && shared.sha256File(p.desktop) !== desktopShaBefore)) {
+    throw new Error('STOP: protected Cursor files changed during deploy');
   }
-  if (desktopShaBefore && shared.sha256File(p.desktop) !== desktopShaBefore) {
-    throw new Error('STOP: desktop bundle changed unexpectedly during deploy');
-  }
-  console.log('[deploy] product.json unchanged');
-  if (desktopShaBefore) console.log('[deploy] desktop bundle unchanged');
+  console.log('[deploy] Cursor ' + identity.version + '/' + identity.commit);
+  console.log('[deploy] external backup=' + backups.backup);
+  console.log('[deploy] placement=' + placement + '; loader marker=1');
+  console.log('[deploy] sidecar sha256=' + shared.sha256File(p.sidecar));
+  console.log('[deploy] Glass sha256=' + shared.sha256File(p.glass));
 }
 
 try {
   main();
 } catch (e) {
-  console.error(`[deploy] FAILED: ${e.message}`);
+  console.error('[deploy] FAILED: ' + e.message);
   process.exit(e.code === 'CHECKSUM_PROTECTED' ? 3 : 1);
 }
