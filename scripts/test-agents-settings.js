@@ -55,9 +55,11 @@ const pairs = [
   ['New Messages', '新消息', 'Choose the default behavior of messages sent while Agent is working', '选择智能体工作时发送消息的默认处理方式'],
   ['Manually Sent Messages from Queue', '从队列手动发送的消息', 'Choose the default behavior of messages sent from the queue', '选择从队列发送消息时的默认处理方式'],
   ['Auto-Parse Links', '自动解析链接', 'Automatically parse links when pasted into Quick Edit (Ctrl+K) input', '将链接粘贴到快速编辑（Ctrl+K）输入框时自动解析'],
+  ['Submit with Ctrl + Enter', '使用 Ctrl + Enter 提交', 'Ctrl+Enter submits chat, Enter inserts a newline, and primary actions move to Ctrl+Alt+Enter', 'Ctrl+Enter 提交聊天，Enter 插入换行，主要操作改用 Ctrl+Alt+Enter'],
+  ['Voice Submit Keywords', '语音提交关键词', 'Custom words that submit a voice prompt. Spaces and punctuation are ignored.', '用于提交语音提示词的自定义词语；空格和标点符号会被忽略。'],
 ];
-assert.strictEqual(runtime.RUNTIME_PHASE, '2F.2');
-assert.strictEqual(pack.contextual.length, 71);
+assert.strictEqual(runtime.RUNTIME_PHASE, '2F.3');
+assert.strictEqual(pack.contextual.length, 75);
 for (const [enLabel, zhLabel, enDescription, zhDescription] of pairs) {
   const f = fixture('  ' + enLabel + '  ', '  ' + enDescription + '  ');
   assert.strictEqual(runtime.matchesContextualWhen('agents-settings-label', f.labelNode), true);
@@ -83,6 +85,8 @@ for (const opts of [
   assert.strictEqual(runtime.tryApplyContextualTranslation(text('Run Mode', f.labelBox)), null);
   assert.strictEqual(runtime.tryApplyContextualTranslation(text('Last Used', f.row)), null);
   assert.strictEqual(runtime.tryApplyContextualTranslation(text('Automatically parse links when pasted into Quick Edit (⌘K) input', f.descriptionBox)), null);
+  assert.strictEqual(runtime.tryApplyContextualTranslation(text('Submit with ⌘ + Enter', f.labelBox)), null);
+  assert.strictEqual(runtime.tryApplyContextualTranslation(text('submit', f.row)), null);
 }
 for (const attrs of [
   { 'data-message-kind': 'human' }, { 'data-message-kind': 'thinking' },
@@ -98,6 +102,7 @@ for (const attrs of [
   assert.strictEqual(runtime.tryApplyContextualTranslation(text(pairs[0][2], code)), null);
   const editable = el('div', { contenteditable: 'true' }, f.labelBox);
   assert.strictEqual(runtime.tryApplyContextualTranslation(text('Default Environment', editable)), null);
+  assert.strictEqual(runtime.tryApplyContextualTranslation(text('Voice Submit Keywords', editable)), null);
 }
 {
   const f = fixture(pairs[0][0], pairs[0][2]);
@@ -114,4 +119,4 @@ for (const attrs of [
   assert.strictEqual(f.descriptionNode.nodeValue, pairs[4][3]);
   assert.strictEqual(state.dynamicContextualTranslationsApplied, 2);
 }
-console.log('OK Phase 2F.2 Agents settings: 8 rows, safety, scan, dynamic');
+console.log('OK Phase 2F.3 Agents settings: 10 rows, safety, scan, dynamic');

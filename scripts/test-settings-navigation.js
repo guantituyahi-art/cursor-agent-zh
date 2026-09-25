@@ -61,8 +61,8 @@ const names = {
   Beta: '测试版',
   Docs: '文档',
 };
-assert.strictEqual(runtime.RUNTIME_PHASE, '2F.2');
-assert.strictEqual(pack.contextual.length, 71);
+assert.strictEqual(runtime.RUNTIME_PHASE, '2F.3');
+assert.strictEqual(pack.contextual.length, 75);
 for (const [en, zh] of Object.entries(names)) {
   const f = fixture('  ' + en + '  ');
   assert.strictEqual(runtime.matchesContextualWhen('settings-sidebar-label', f.node), true);

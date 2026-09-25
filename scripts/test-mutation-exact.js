@@ -20,7 +20,7 @@ const POC_PACK = {
   ],
   dynamic: [],
   schema: 'layered-v1',
-  runtimePhase: '2F.2',
+  runtimePhase: '2F.3',
 };
 
 globalThis.__cursorAgentZhTranslations = POC_PACK;
@@ -298,7 +298,7 @@ test('no setInterval / no attr observer / no full-body rescan helper', () => {
   assert.ok(!/TRANSLATION_OBSERVER_OPTIONS = \{[^}]*attributes\s*:/.test(src));
   // processAddedNode must not call runSafetyScan(doc.body
   assert.ok(!/processAddedNode[\s\S]{0,400}runSafetyScan\(\s*doc\.body/.test(src));
-  assert.strictEqual(safety.RUNTIME_PHASE, '2F.2');
+  assert.strictEqual(safety.RUNTIME_PHASE, '2F.3');
 });
 
 
