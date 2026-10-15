@@ -97,7 +97,12 @@ try {
     const result = spawnSync(process.execPath, [
       path.join(__dirname, 'deploy-glass-loader.js'), '--app', app,
       '--repo', path.join(__dirname, '..'),
-    ], { encoding: 'utf8' });
+    ], {
+      encoding: 'utf8',
+      // External backups need LOCALAPPDATA; set it explicitly so this rejection
+      // test asserts the unknown-Glass gate even where the variable is unset.
+      env: Object.assign({}, process.env, { LOCALAPPDATA: path.join(root, 'reject-local') }),
+    });
     assert.strictEqual(result.status, 1);
     assert.match(result.stderr, /Glass SHA\/size differs/);
     assert.strictEqual(fs.existsSync(p.sidecar), false);
