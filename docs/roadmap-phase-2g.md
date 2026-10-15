@@ -31,8 +31,8 @@
 | --- | --- | --- | --- | --- |
 | 0 | 提交既有测试修复（`LOCALAPPDATA` 显式注入） | WSL | 1 个 commit，工作区干净 | ☑ |
 | 1 | 加入 `Customize` 侧栏 contextual 词条（复用 `sidebar-menu-button`） | WSL | +1 条规则；新测试 ≥5 断言；全部测试 exit=0 | ☑ |
-| 2 | Deferred 词实机证据收集（只读探针） | Windows | 8 个词各得「出现次数 + anchor 属性」 | ☐ |
-| 3 | 按证据实现有锚点的词；无证据的标 closed | WSL | 新增词条数 = 有证据词数 | ☐ |
+| 2 | Deferred 词实机证据收集（只读探针） | Windows | 8 个词各得「出现次数 + anchor 属性」 | ☑ 默认视图已取证；hover / 菜单 / Changes 视图未覆盖，见 `phase-2g2-deferred-evidence.md` |
+| 3 | 按证据实现有锚点的词；无证据的标 closed | WSL | 新增词条数 = 有证据词数 | ⏸ 当前证据下无新增可实现词（唯一有证据的 Customize 已在步骤 1 落地；New Agent 需属性翻译） |
 | 4 | 全量回归 + 文档更新 | WSL | 全部测试 exit=0；`node --check` 通过 | ☐ |
 | 5 | 部署 + 实机验收 | Windows | 验收清单全过；无新增 `[cursor-agent-zh]` 错误 | ☐ |
 
@@ -68,3 +68,5 @@
 ## 进度记录
 
 - 2026-10-15：建立路线图；步骤 0、1 完成（见 `phase-2g1-sidebar-customize.md`）。
+- 2026-10-15：步骤 2 只读取证完成（默认视图），见 `phase-2g2-deferred-evidence.md`。
+  结论：当前证据下步骤 3 无新增可实现词条；其余词待补充取证或需属性翻译能力。
