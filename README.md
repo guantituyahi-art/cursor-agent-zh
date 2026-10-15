@@ -63,6 +63,7 @@ scripts/        部署、还原与回归测试
 - [Phase 2G 路线图（Deferred 词条）](docs/roadmap-phase-2g.md)
 - [Phase 2G.1 侧栏 Customize](research/phase-2g1-sidebar-customize.md)
 - [Phase 2G.2 Deferred 词条证据探针](research/phase-2g2-deferred-evidence.md)
+- [Cursor 3.24.18 升级兼容审计](research/cursor-3.24.18-upgrade-compat.md)
 - [既有项目深度分析](research/existing-projects.md)
 
 ## 许可
