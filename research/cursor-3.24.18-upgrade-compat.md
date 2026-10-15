@@ -13,6 +13,8 @@
 2. 上一次的注入**已被更新器清除**（marker = 0，sidecar 不存在）。
 3. **实机 DOM 未验证**：消息 kind / role 取值集合与 Settings 作用域仍需在真实 Agents Window 复核。
 
+> **2026-10-15 更新：条件 1、2 已解决**（baseline 已登记，见 §8）；**条件 3 的消息 kind/role 已实机验证通过（见 §9）**，Settings 作用域仍未覆盖（低风险）。**当前判定：可进入部署。**
+
 与 3.21.18 → 3.22.7 属同一模式：更新器替换 bundle 并清掉安装目录内的 sidecar，不是新问题。
 
 ## 1. 版本身份
@@ -105,6 +107,26 @@ bundle 中 `"human"` / `"assistant"` / `"thinking"` / `"tool"` / `"ai"` 均有�
 - 只读验证：对真实安装目录 `/mnt/d/下载应用/cursor/resources/app` 调用 `readSupportedIdentity()`，返回 3.24.18 条目。
 - 全量 **13** 个测试脚本 `exit=0`。
 - **部署仍未执行。** 部署前仍待完成「实机 DOM 探针」这道门禁。
+
+## 9. 实机只读 DOM 探针（2026-10-15，3.24.18）
+
+方法：DevTools Console 内联脚本，只读取 DOM 属性与计数，**不读消息正文**；采集期界面为「有消息的对话 + 展开的侧栏」。
+
+| 字段 | 实测值 | 判定 |
+| --- | --- | --- |
+| `glass` | `"true"` | Glass 标记仍在 |
+| `runtime` / `loader` | `false` / `false` | 注入确认已被清除 |
+| `messageKinds` | `human:6, thinking:3, assistant:8, tool:4` | **无新增 kind**，全部在现有 `MESSAGE_KINDS` 内 |
+| `messageRoles` | `human:6, ai:15` | **无新增 role**；`ai` = 8+3+4，与 3.22.7 结论一致 |
+| 词典目标 | New Chat 2 / New Project 2 / Automations 2 / Search 1 / Customize 1 | 现有词条在真实 UI 中仍存在 |
+| `counts` | sidebar 41、sidebarLabel 41、code 105、input 5、ce 5 | 侧栏锚点与排除目标正常；`pre` 0、`monaco` 0、`xterm` 0（本次未出现） |
+| Settings | `tabs`=[]、settingsSidebar 0、entryLabel 0、entryDesc 0 | **未覆盖**：Settings 页未打开 |
+
+**结论：**
+
+- 消息不变量在 3.24.18 **仍然成立** → 安全门禁通过。
+- Settings 作用域本次未实机覆盖。风险低：锚点若改名，规则只是**未命中**（fail-closed），不会误译。
+- `monaco` / `xterm` 本次未出现，排除规则无需改动。
 
 ## 未验证与边界
 
