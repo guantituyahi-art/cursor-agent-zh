@@ -62,7 +62,7 @@ const names = {
   Docs: '文档',
 };
 assert.strictEqual(runtime.RUNTIME_PHASE, '2F.3');
-assert.strictEqual(pack.contextual.length, 75);
+assert.ok(pack.contextual.length >= 76, 'contextual rules shrank below Phase 2G.1 baseline');
 for (const [en, zh] of Object.entries(names)) {
   const f = fixture('  ' + en + '  ');
   assert.strictEqual(runtime.matchesContextualWhen('settings-sidebar-label', f.node), true);

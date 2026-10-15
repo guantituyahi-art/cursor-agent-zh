@@ -10,6 +10,7 @@
       "zh": "搜索",
       "when": "sidebar-menu-button"
     },
+    { "en": "Customize", "zh": "自定义", "when": "sidebar-menu-button" },
     { "en": "Theme", "zh": "主题", "when": "appearance-settings-label" },
     { "en": "Tool Call Density", "zh": "工具调用详情密度", "when": "appearance-settings-label" },
     { "en": "Code Block Word Wrap", "zh": "代码块自动换行", "when": "appearance-settings-label" },

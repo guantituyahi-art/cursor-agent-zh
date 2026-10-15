@@ -10,7 +10,7 @@
 
 ## 当前阶段
 
-Phase 1D.2b.1 已在 Cursor 3.21.18 人工验收：Glass 内三个 exact 文案及侧栏 Search 上下文翻译。Cursor 3.22.7 兼容适配已验收；Phase 2A 三页首轮盘点已完成，Phase 2B.1 的 Appearance 四个标签已获实机显示与控件反馈；Phase 2B.2 的同页九个新增标签已获实机确认；Phase 2C.1 的四条 Appearance 说明文案已获实机确认；Phase 2C.2 的同页九条新增说明已获实机确认；Phase 2D.1 的 General 页四组静态文案已获实机确认；Phase 2D.2 的同页三组新增文案已获实机确认；Phase 2E.1 的 Settings 十四项导航标签已获实机确认；Phase 2F.1 的 Agents 页五组普通静态文案已获实机确认；Phase 2F.2 的三组消息行为和编辑辅助文案已获实机确认；Phase 2F.3 的提交快捷键与语音关键词静态说明已获实机确认。Console 基线仍有未判定项。运行时与部署细节见 [架构](docs/architecture.md) 和 [3.22.7 升级审计](research/cursor-3.22.7-upgrade-compat.md)。
+Phase 1D.2b.1 已在 Cursor 3.21.18 人工验收：Glass 内三个 exact 文案及侧栏 Search 上下文翻译。Cursor 3.22.7 兼容适配已验收；Phase 2A 三页首轮盘点已完成，Phase 2B.1 的 Appearance 四个标签已获实机显示与控件反馈；Phase 2B.2 的同页九个新增标签已获实机确认；Phase 2C.1 的四条 Appearance 说明文案已获实机确认；Phase 2C.2 的同页九条新增说明已获实机确认；Phase 2D.1 的 General 页四组静态文案已获实机确认；Phase 2D.2 的同页三组新增文案已获实机确认；Phase 2E.1 的 Settings 十四项导航标签已获实机确认；Phase 2F.1 的 Agents 页五组普通静态文案已获实机确认；Phase 2F.2 的三组消息行为和编辑辅助文案已获实机确认；Phase 2F.3 的提交快捷键与语音关键词静态说明已获实机确认。Phase 2G.1 的侧栏 Customize 词条已完成词典与自动测试（复用 sidebar-menu-button 作用域，未改运行时逻辑），实机验收待做。Console 基线仍有未判定项。运行时与部署细节见 [架构](docs/architecture.md) 和 [3.22.7 升级审计](research/cursor-3.22.7-upgrade-compat.md)。
 
 ## 版本说明
 
@@ -60,6 +60,8 @@ scripts/        部署、还原与回归测试
 - [Phase 2F.1 Agents 静态设置](research/phase-2f1-agents-settings.md)
 - [Phase 2F.2 Agents 消息与编辑辅助](research/phase-2f2-agents-message-editing.md)
 - [Phase 2F.3 Agents 快捷键与语音说明](research/phase-2f3-agents-shortcut-voice.md)
+- [Phase 2G 路线图（Deferred 词条）](docs/roadmap-phase-2g.md)
+- [Phase 2G.1 侧栏 Customize](research/phase-2g1-sidebar-customize.md)
 - [既有项目深度分析](research/existing-projects.md)
 
 ## 许可

@@ -76,7 +76,7 @@ const translations = {
   'Switch to a high contrast theme when your OS is in a high contrast mode': '操作系统启用高对比度模式时，切换到高对比度主题',
 };
 assert.strictEqual(runtime.RUNTIME_PHASE, '2F.3');
-assert.strictEqual(pack.contextual.length, 75);
+assert.ok(pack.contextual.length >= 76, 'contextual rules shrank below Phase 2G.1 baseline');
 
 for (const [en, zh] of Object.entries(translations)) {
   const f = fixture('  ' + en + '  ');

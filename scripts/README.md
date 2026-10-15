@@ -19,6 +19,7 @@
     node scripts/test-exact-translation.js
     node scripts/test-mutation-exact.js
     node scripts/test-contextual-sidebar-search.js
+    node scripts/test-contextual-sidebar-customize.js
     node scripts/test-appearance-settings-labels.js
     node scripts/test-appearance-settings-descriptions.js
     node scripts/test-general-settings.js

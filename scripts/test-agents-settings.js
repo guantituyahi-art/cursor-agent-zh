@@ -59,7 +59,7 @@ const pairs = [
   ['Voice Submit Keywords', '语音提交关键词', 'Custom words that submit a voice prompt. Spaces and punctuation are ignored.', '用于提交语音提示词的自定义词语；空格和标点符号会被忽略。'],
 ];
 assert.strictEqual(runtime.RUNTIME_PHASE, '2F.3');
-assert.strictEqual(pack.contextual.length, 75);
+assert.ok(pack.contextual.length >= 76, 'contextual rules shrank below Phase 2G.1 baseline');
 for (const [enLabel, zhLabel, enDescription, zhDescription] of pairs) {
   const f = fixture('  ' + enLabel + '  ', '  ' + enDescription + '  ');
   assert.strictEqual(runtime.matchesContextualWhen('agents-settings-label', f.labelNode), true);

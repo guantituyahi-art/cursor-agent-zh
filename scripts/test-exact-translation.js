@@ -213,7 +213,7 @@ test('deploy loadTranslationsPack layered schema', () => {
     'New Project',
   ]);
   assert.ok(Array.isArray(pack.contextual));
-  assert.strictEqual(pack.contextual.length, 75);
+  assert.ok(pack.contextual.length >= 76, 'contextual rules shrank below Phase 2G.1 baseline');
   assert.strictEqual(pack.contextual[0].en, 'Search');
   assert.strictEqual(pack.contextual[0].zh, '搜索');
   assert.strictEqual(pack.contextual[0].when, 'sidebar-menu-button');

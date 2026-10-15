@@ -35,3 +35,5 @@ Exact PoC + MutationObserver（**仅**三个完整串；Glass DOM 校准）。�
 ## 尚未实现
 
 characterData observer / dynamic / 其它 Settings 文案 / deferred 种子（原 New Agent / Show Chat History / Review changes / Keep / Undo / …）。
+
+词典层补充：Phase 2G.1 已加入侧栏 `Customize`（复用 `sidebar-menu-button` 作用域，无运行时逻辑变更，`RUNTIME_PHASE` 保持 2F.3）。见 `research/phase-2g1-sidebar-customize.md`。

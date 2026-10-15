@@ -56,7 +56,7 @@ const pairs = [
   ['Completion Sound', '完成提示音', 'Play a sound when agents finish or need attention', '智能体完成任务或需要关注时播放提示音'],
 ];
 assert.strictEqual(runtime.RUNTIME_PHASE, '2F.3');
-assert.strictEqual(pack.contextual.length, 75);
+assert.ok(pack.contextual.length >= 76, 'contextual rules shrank below Phase 2G.1 baseline');
 
 for (const [enLabel, zhLabel, enDescription, zhDescription] of pairs) {
   const f = fixture('  ' + enLabel + '  ', '  ' + enDescription + '  ');

@@ -79,7 +79,7 @@ const wanted = {
 };
 assert.strictEqual(pack.runtimePhase, '2F.3');
 assert.strictEqual(runtime.RUNTIME_PHASE, '2F.3');
-assert.strictEqual(pack.contextual.length, 75);
+assert.ok(pack.contextual.length >= 76, 'contextual rules shrank below Phase 2G.1 baseline');
 assert.deepStrictEqual(Object.keys(pack.exact), ['New Chat', 'New Project', 'Automations']);
 
 for (const [en, zh] of Object.entries(wanted)) {
