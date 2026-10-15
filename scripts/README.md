@@ -1,8 +1,15 @@
 # scripts/
 
-## Cursor 3.22.7 部署与还原
+## Cursor 3.24.18 部署与还原
 
-当前只支持 Cursor 3.22.7、commit 37076c6c3f9e253c0fa2305197e45befd13a2260，以及原始 Glass SHA256 721501D167E1EA82E51F33346C924448A34360E857B1E6D3972DC677589AA5A0。其它版本或哈希在写入安装目录前停止。
+当前适配目标为 **3.24.18**，同时保留 **3.22.7** 历史基线。已登记的原始身份：
+
+| 版本 | commit | 原始 Glass SHA256 | 字节数 |
+| --- | --- | --- | --- |
+| **3.24.18** | `be4c9e5350d77747b42cd467cbd3370a753d4640` | `8660A1449025C353BCB9E076D609A427955EB0A94B2D84646D2F758C6947813B` | 47,393,036 |
+| 3.22.7 | `37076c6c3f9e253c0fa2305197e45befd13a2260` | `721501D167E1EA82E51F33346C924448A34360E857B1E6D3972DC677589AA5A0` | 45,389,668 |
+
+其它版本或哈希在写入安装目录前停止。新增基线前先读 [`research/cursor-3.24.18-upgrade-compat.md`](../research/cursor-3.24.18-upgrade-compat.md)。
 
 运行前须完全退出 Cursor。部署只改 Glass bundle 与由仓库生成的 sidecar；不会改 product.json 或普通编辑器 bundle。
 
@@ -27,5 +34,6 @@
     node scripts/test-agents-settings.js
     node scripts/test-loader-placement.js
     node scripts/test-versioned-backup.js
+    node scripts/test-supported-baselines.js
 
 版本化备份测试只在自有临时目录内创建 fixture 并在结束后清理。仓库测试不能替代 3.22.7 的真实 DOM 与 Agents Window 验收。

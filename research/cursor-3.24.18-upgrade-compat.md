@@ -87,10 +87,24 @@ bundle 中 `"human"` / `"assistant"` / `"thinking"` / `"tool"` / `"ai"` 均有�
 
 ## 7. 建议下一步
 
-1. **实机只读 DOM 探针**（用户执行，见仓库外探针或本文件同批脚本）。
-2. 登记 3.24.18 baseline（version + commit + SHA256 + bytes）到 `scripts/lib/glass-loader-shared.js`。
+1. ✅ **已完成**：登记 3.24.18 baseline（见 §8）。
+2. ⬅ **待做**：实机只读 DOM 探针（用户执行）——确认 kind / role 取值集合与 Settings 作用域。
 3. 依探针结果决定是否需要新的 kind / role / 作用域适配。
 4. 全量测试 → 部署 → 实机验收。
+
+## 8. Baseline 登记（已完成，2026-10-15）
+
+`scripts/lib/glass-loader-shared.js` 新增 3.24.18 条目（保留 3.22.7 历史基线）：
+
+| version | commit | sha256 | bytes |
+| --- | --- | --- | --- |
+| **3.24.18** | `be4c9e5350d77747b42cd467cbd3370a753d4640` | `8660A1449025C353BCB9E076D609A427955EB0A94B2D84646D2F758C6947813B` | 47,393,036 |
+| 3.22.7 | `37076c6c3f9e253c0fa2305197e45befd13a2260` | `721501D167E1EA82E51F33346C924448A34360E857B1E6D3972DC677589AA5A0` | 45,389,668 |
+
+- 新增测试 `scripts/test-supported-baselines.js`（4 项）：守护每个基线的 SHA/bytes 与 `version:commit` key 格式，并验证 `readSupportedIdentity()` 对已登记身份解析、对未知身份 fail-closed。
+- 只读验证：对真实安装目录 `/mnt/d/下载应用/cursor/resources/app` 调用 `readSupportedIdentity()`，返回 3.24.18 条目。
+- 全量 **13** 个测试脚本 `exit=0`。
+- **部署仍未执行。** 部署前仍待完成「实机 DOM 探针」这道门禁。
 
 ## 未验证与边界
 

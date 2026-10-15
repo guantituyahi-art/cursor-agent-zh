@@ -11,6 +11,14 @@ const LOADER_MARKER_COMMENT = `/* ${LOADER_MARKER} */`;
 
 /** Explicitly approved Cursor bundle baselines. Never infer pristine from a patched file. */
 const SUPPORTED_BASELINES = Object.freeze({
+  // Current install target. The updater replaced the 3.22.7 bundle, so the
+  // 3.24.18 glass file is pristine again (loader marker absent).
+  '3.24.18:be4c9e5350d77747b42cd467cbd3370a753d4640': Object.freeze({
+    version: '3.24.18',
+    commit: 'be4c9e5350d77747b42cd467cbd3370a753d4640',
+    sha256: '8660A1449025C353BCB9E076D609A427955EB0A94B2D84646D2F758C6947813B',
+    bytes: 47393036,
+  }),
   '3.22.7:37076c6c3f9e253c0fa2305197e45befd13a2260': Object.freeze({
     version: '3.22.7',
     commit: '37076c6c3f9e253c0fa2305197e45befd13a2260',
