@@ -52,6 +52,32 @@
 | Changes / diff 视图 | Review changes / Keep / Undo / Keep All / Undo All | 打开 Changes 后跑探针 |
 | 窗口 / 应用菜单 | New Agents Window | 打开菜单后跑探针 |
 
+## 采集窗口复测（3.22.7 实机，2026-10-15）
+
+方法：40 秒采集窗口。脚本先全量快照，再以 `MutationObserver`
+（`childList` + `characterData` + 属性过滤）记录期间新增的匹配，用户同期手动操作四个界面。
+
+| 词 | 来源 | via | inMsg | inCode | anchor 证据 |
+| --- | --- | --- | --- | --- | --- |
+| Customize | initial | text | false | false | `div.ui-button.ui-sidebar-menu-button[data-sidebar-menu-button]` |
+| **Keep** | **added** | **text** | **false** | **false** | `button.ui-button < div[data-diff-card-header,data-diff-content-ready]` |
+| New Agent | — | — | — | — | 悬浮未产生文本节点；仍只有 `aria-label` |
+| Show Chat History | — | — | — | — | 未捕获 |
+| New Agents Window | — | — | — | — | 未捕获 |
+| Review changes | — | — | — | — | 未捕获 |
+| Undo / Keep All / Undo All | — | — | — | — | 未捕获 |
+
+**判定更新：**
+
+- `Keep`：由 closed 改为 **有实机样本、可做**。anchor 与 `phase-1d2b0` 记录的
+  `data-diff-card-header` / `data-diff-content-ready` 一致；需要新增一个 diff 卡片作用域。
+- `Undo` / `Keep All` / `Undo All`：同一视图未出现，**待定向取证**
+  （可能为图标按钮 + `aria-label`，也可能是不同卡片状态）。
+- `New Agent`：悬浮未产生文本，仍归属性翻译 deferred。
+
+**边界：** 本次仅一个 diff 卡片样本；未确认 `Keep` 按钮所在卡片是否会在
+`data-message-kind` 容器内出现；未确认 `Undo` 等是否存在。
+
 ## 顺带发现
 
 - 侧栏菜单按钮带 **`data-action-id`**（`div.ui-button.ui-sidebar-menu-button[data-sidebar-menu-button,data-variant,data-compact,data-action-id]`）。
